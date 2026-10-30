@@ -3,7 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#11162A">
+<meta name="theme-color" content="#2F5BEA">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 <title>Piano Kecilku</title>
@@ -138,7 +141,8 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
 .big-stars .off{color:var(--line)}
 /* Layar penuh saat main game */
 body.fs{overflow:hidden}
-body.fs .wrap>*:not(.stage){display:none!important}
+body.fs .appbar,body.fs .tabbar,body.fs .tab:not(#tab-main),body.fs #tab-main>*:not(.stage),body.fs #changeSong{display:none!important}
+body.fs{padding-bottom:0}
 body.fs .stage{position:fixed;inset:0;z-index:15;border-radius:0;border:0;gap:8px;
   padding:max(8px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(8px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
 body.fs .modes,body.fs .legend,body.fs .speeds,body.fs #optsCtl,body.fs #gameCtl .toggle,body.fs #fsWant{display:none!important}
@@ -149,63 +153,44 @@ body.fs #gameCtl{flex-wrap:nowrap}
 body.fs #gameCtl .btn{padding:8px 14px}
 #fsExit{display:none}
 body.fs #fsExit{display:inline-block;margin-left:auto}
+/* Kerangka aplikasi: bilah atas, tab, menu bawah */
+body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+.appbar{max-width:760px;margin:0 auto 14px;display:flex;flex-direction:row;align-items:center;gap:10px}
+.appbar h1{font-size:22px;flex:1;min-width:0;white-space:nowrap}
+.logo{width:36px;height:36px;flex:none}
+.status-chip{flex:none;display:flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:6px 10px;font-size:13px;font-weight:700;max-width:52%}
+.status-chip span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tab{display:flex;flex-direction:column;gap:14px}
+.tab>h2{font-size:24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.card h3{font-family:var(--display);font-size:18px;font-weight:800}
+.title-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}
+.linkbtn{border:0;background:none;color:var(--accent);font-weight:700;font-size:14px;padding:4px 0}
+.install-card{background:var(--card);border:1.5px solid var(--accent);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-weight:700}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:12;display:flex;justify-content:center;gap:4px;background:var(--card);border-top:1px solid var(--line);
+  padding:6px max(16px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.tabbtn{flex:1;max-width:200px;border:0;background:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border-radius:12px;font-weight:700;font-size:13px}
+.tabbtn .ti{font-size:22px;line-height:1}
+.tabbtn[aria-current="page"]{color:var(--accent);background:var(--paper)}
+#songGroups .group-label:first-child{margin-top:0}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 
+<header class="appbar">
+  <svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="var(--accent)"/><rect x="7" y="9" width="26" height="22" rx="3" fill="#fff"/><path d="M15.7 9v22M24.3 9v22" stroke="#C9D2EA" stroke-width="1.2"/><rect x="13.2" y="9" width="5" height="12" rx="1.2" fill="#1A1F33"/><rect x="21.8" y="9" width="5" height="12" rx="1.2" fill="#1A1F33"/><circle cx="11.3" cy="27" r="1.8" fill="#E8433A"/><circle cx="20" cy="27" r="1.8" fill="#E9B800"/><circle cx="28.7" cy="27" r="1.8" fill="#1E9BD7"/></svg>
+  <h1>Piano Kecilku</h1>
+  <button class="status-chip" id="kbChip" aria-label="Status keyboard, buka pengaturan"><span class="dot" id="dot2"></span><span id="kbChipText">🎹 Belum tersambung</span></button>
+</header>
+
 <div class="wrap">
-  <header>
-    <h1>Piano Kecilku</h1>
-    <p class="muted">Ikuti tombol kuning. Lagu menunggu sampai kamu menekan nada yang benar.</p>
-    <p class="wake"><span class="dot" id="wakeDot"></span><span id="wakeText">Layar tetap menyala: belum aktif</span></p>
-  </header>
-
-  <section class="conn" aria-live="polite">
-    <div class="conn-row">
-      <span class="dot" id="dot"></span>
-      <span id="connText">Keyboard belum tersambung</span>
-      <button class="btn" id="connectBtn">Sambungkan (kabel)</button>
-      <button class="btn ghost" id="btBtn">Sambungkan (Bluetooth)</button>
-    </div>
-    <p id="connHelp">Colokkan keyboard ke HP dengan kabel USB + adaptor OTG, nyalakan keyboard, lalu tekan tombol di atas. Tanpa keyboard, kamu tetap bisa berlatih dengan menyentuh piano di layar.</p>
-    <p id="lastNote" class="muted">Tombol terakhir ditekan: <b>—</b></p>
-    <p style="font-weight:700;margin-top:4px">Pilih suara alat musik</p>
-    <div class="instr" id="instr"></div>
-    <label class="toggle"><input type="checkbox" id="pianoOn" checked> <span><b>Bunyikan suara pilihan dari HP</b> (kecilkan volume keyboard Rixton sampai paling pelan)</span></label>
-    <p id="pianoStatus" class="muted" style="font-size:14px">Memuat suara…</p>
-  </section>
-
-  <section>
-    <h2 style="margin-bottom:6px">Pilih lagu</h2>
-    <div id="songGroups"></div>
-  </section>
-
-  <section class="editor" id="editor" hidden aria-labelledby="edTitle">
-    <h2 id="edTitle">Tambah lagu dari not angka</h2>
-    <div class="row">
-      <div class="field"><label for="cTitle">Judul lagu</label><input id="cTitle" type="text" placeholder="Contoh: Balonku" maxlength="40"></div>
-      <div class="field"><label for="cDo">Do = </label>
-        <select id="cDo">
-          <option value="60" selected>C (paling mudah)</option><option value="61">C#/Des</option><option value="62">D</option><option value="63">D#/Es</option><option value="64">E</option><option value="65">F</option><option value="66">F#/Fis</option><option value="55">G</option><option value="56">G#/As</option><option value="57">A</option><option value="58">A#/Bes</option><option value="59">B</option>
-        </select></div>
-    </div>
-    <div class="field"><label for="cNotes">Not angka (angkanya saja, tanpa lirik)</label>
-      <textarea id="cNotes" placeholder="1 2 3 1 | 1 2 3 1 | 3 4 5 - | 3 4 5 -"></textarea></div>
-    <div class="tips">
-      <span>Cari di Google: <b>not angka [judul lagu]</b>, lalu salin angkanya.</span>
-      <span><code>1'</code> nada tinggi &nbsp; <code>5.</code> nada rendah &nbsp; <code>-</code> tahan nada &nbsp; <code>4/</code> naik setengah &nbsp; <code>0</code> diam</span>
-      <span>Angka yang ditulis menempel (<code>53</code>) dibaca sebagai dua nada cepat.</span>
-    </div>
-    <p id="parseOut" class="muted">Belum ada not.</p>
-    <div class="controls">
-      <button class="btn ghost" id="cTry">▶ Dengar</button>
-      <button class="btn" id="cSave">Simpan lagu</button>
-      <button class="btn ghost" id="cCancel">Batal</button>
-    </div>
-  </section>
-
+ <section class="tab" id="tab-main">
+  <div class="install-card" id="installCard" hidden>
+    <span>📲 Pasang Piano Kecilku di layar HP supaya bisa dibuka seperti aplikasi.</span>
+    <div class="controls"><button class="btn" id="installBtn2">Pasang</button><button class="btn ghost" id="installLater">Nanti</button></div>
+  </div>
   <section class="stage">
     <div class="stage-top">
-      <h2 id="songTitle">—</h2>
+      <div class="title-row"><h2 id="songTitle">—</h2><button class="linkbtn" id="changeSong">Ganti lagu ›</button></div>
       <span id="progressText">0 / 0</span>
     </div>
     <div class="modes" role="group" aria-label="Pilih mode"><button class="seg" id="modeLearn" aria-pressed="true">📖 Mode belajar</button><button class="seg" id="modeGame" aria-pressed="false">🎮 Mode game</button></div>
@@ -239,14 +224,72 @@ body.fs #fsExit{display:inline-block;margin-left:auto}
       <label class="toggle"><input type="checkbox" id="drumOn" checked> Ketukan drum</label>
       <p class="legend" style="flex-basis:100%">Tekan tombol yang warnanya sama saat balok menyentuh garis bawah. Garis tebal mendatar = awal ketukan pertama tiap birama.</p>
     </div>
-    <div class="controls" id="optsCtl">
-      <label class="toggle" for="musicVol">Volume musik <input type="range" id="musicVol" min="0" max="100" value="80" style="width:120px;height:auto"></label>
-      <button class="btn ghost" id="testBtn">🔊 Tes suara</button>
-      <p class="legend" id="testMsg" style="flex-basis:100%" hidden>Seharusnya terdengar: dum, ces, tak, lalu akord. Kalau tidak terdengar, tekan tombol volume naik di samping HP saat aplikasi terbuka (volume media), lalu coba lagi.</p>
-      <label class="toggle"><input type="checkbox" id="accOn" checked> Musik pengiring</label>
-      <label class="toggle"><input type="checkbox" id="anyOct" checked> Boleh oktaf mana saja</label>
-      <button class="btn danger" id="delBtn" hidden>Hapus lagu ini</button>
+  </section>
+ </section>
+
+ <section class="tab" id="tab-songs" hidden>
+  <h2>Pilih lagu</h2>
+  <div id="songGroups"></div>
+  <button class="btn danger" id="delBtn" hidden>Hapus lagu ini</button>
+  <section class="editor" id="editor" hidden aria-labelledby="edTitle">
+    <h2 id="edTitle">Tambah lagu dari not angka</h2>
+    <div class="row">
+      <div class="field"><label for="cTitle">Judul lagu</label><input id="cTitle" type="text" placeholder="Contoh: Balonku" maxlength="40"></div>
+      <div class="field"><label for="cDo">Do = </label>
+        <select id="cDo">
+          <option value="60" selected>C (paling mudah)</option><option value="61">C#/Des</option><option value="62">D</option><option value="63">D#/Es</option><option value="64">E</option><option value="65">F</option><option value="66">F#/Fis</option><option value="55">G</option><option value="56">G#/As</option><option value="57">A</option><option value="58">A#/Bes</option><option value="59">B</option>
+        </select></div>
     </div>
+    <div class="field"><label for="cNotes">Not angka (angkanya saja, tanpa lirik)</label>
+      <textarea id="cNotes" placeholder="1 2 3 1 | 1 2 3 1 | 3 4 5 - | 3 4 5 -"></textarea></div>
+    <div class="tips">
+      <span>Cari di Google: <b>not angka [judul lagu]</b>, lalu salin angkanya.</span>
+      <span><code>1'</code> nada tinggi &nbsp; <code>5.</code> nada rendah &nbsp; <code>-</code> tahan nada &nbsp; <code>4/</code> naik setengah &nbsp; <code>0</code> diam</span>
+      <span>Angka yang ditulis menempel (<code>53</code>) dibaca sebagai dua nada cepat.</span>
+    </div>
+    <p id="parseOut" class="muted">Belum ada not.</p>
+    <div class="controls">
+      <button class="btn ghost" id="cTry">▶ Dengar</button>
+      <button class="btn" id="cSave">Simpan lagu</button>
+      <button class="btn ghost" id="cCancel">Batal</button>
+    </div>
+  </section>
+ </section>
+
+ <section class="tab" id="tab-set" hidden>
+  <h2>Pengaturan</h2>
+  <section class="card conn" aria-live="polite">
+    <h3>Keyboard</h3>
+    <div class="conn-row">
+      <span class="dot" id="dot"></span>
+      <span id="connText">Keyboard belum tersambung</span>
+    </div>
+    <div class="controls"><button class="btn" id="connectBtn">Sambungkan (kabel)</button><button class="btn ghost" id="btBtn">Sambungkan (Bluetooth)</button></div>
+    <p id="connHelp">Colokkan keyboard ke HP dengan kabel USB + adaptor OTG, nyalakan keyboard, lalu tekan tombol di atas. Tanpa keyboard, kamu tetap bisa berlatih dengan menyentuh piano di layar.</p>
+    <p id="lastNote" class="muted">Tombol terakhir ditekan: <b>—</b></p>
+  </section>
+
+  <section class="card">
+    <h3>Suara alat musik</h3>
+    <div class="instr" id="instr"></div>
+    <p id="pianoStatus" class="muted" style="font-size:14px">Memuat suara…</p>
+    <label class="toggle"><input type="checkbox" id="pianoOn" checked> <span><b>Bunyikan suara pilihan dari HP</b> (kecilkan volume keyboard Rixton sampai paling pelan)</span></label>
+  </section>
+
+  <section class="card">
+    <h3>Musik dan latihan</h3>
+    <label class="toggle" for="musicVol">Volume musik <input type="range" id="musicVol" min="0" max="100" value="80" style="flex:1;max-width:220px;height:auto"></label>
+    <label class="toggle"><input type="checkbox" id="accOn" checked> Musik pengiring</label>
+    <label class="toggle"><input type="checkbox" id="anyOct" checked> Boleh oktaf mana saja</label>
+    <div class="controls"><button class="btn ghost" id="testBtn">🔊 Tes suara</button></div>
+    <p class="legend" id="testMsg" hidden>Seharusnya terdengar: dum, ces, tak, lalu akord. Kalau tidak terdengar, tekan tombol volume naik di samping HP saat aplikasi terbuka (volume media), lalu coba lagi.</p>
+    <p class="wake"><span class="dot" id="wakeDot"></span><span id="wakeText">Layar tetap menyala: belum aktif</span></p>
+  </section>
+
+  <section class="card">
+    <h3>Pasang di HP</h3>
+    <p id="installText" class="muted">Pasang aplikasi ini supaya ikonnya muncul di layar HP dan bisa dibuka tanpa link.</p>
+    <div class="controls"><button class="btn" id="installBtn" hidden>📲 Pasang aplikasi</button></div>
   </section>
 
   <details>
@@ -262,7 +305,14 @@ body.fs #fsExit{display:inline-block;margin-left:auto}
       <li><b>Urutan belajar:</b> mulai dari pelajaran 1, ulangi sampai dapat 3 bintang, baru pindah. Cukup 10–15 menit sehari.</li>
     </ol>
   </details>
+ </section>
 </div>
+
+<nav class="tabbar" aria-label="Menu utama">
+  <button class="tabbtn" data-tab="main" aria-current="page"><span class="ti">🎹</span><span>Main</span></button>
+  <button class="tabbtn" data-tab="songs"><span class="ti">🎵</span><span>Lagu</span></button>
+  <button class="tabbtn" data-tab="set"><span class="ti">⚙️</span><span>Pengaturan</span></button>
+</nav>
 
 <div class="overlay" id="overlay" hidden>
   <div class="result" role="dialog" aria-modal="true" aria-labelledby="resTitle">
@@ -471,7 +521,7 @@ function renderSongs(){
     const grid=document.createElement('div');grid.className='songs';root.appendChild(grid);
     list.forEach(s=>{const b=document.createElement('button');b.className='song';b.setAttribute('aria-pressed',s===song);
       b.innerHTML='<span class="lvl">'+esc(s.lvl)+'</span><span class="nm">'+esc(s.name)+'</span><span class="st">'+starHtml(best[s.id]||0)+'</span>';
-      b.onclick=()=>selectSong(s);grid.appendChild(b);});
+      b.onclick=()=>{selectSong(s);showTab('main');};grid.appendChild(b);});
     if(g==='Lagu saya'){const a=document.createElement('button');a.className='song add';a.innerHTML='<span class="nm">+ Tambah lagu</span><span class="lvl">dari not angka</span>';a.onclick=openEditor;grid.appendChild(a);}
   });
 }
@@ -693,6 +743,34 @@ $('fsOn').onchange=()=>{prefs.fsOn=$('fsOn').checked;store.set('pk-prefs',prefs)
 $('testBtn').onclick=()=>{ac();$('testMsg').hidden=false;['kick','hat','snare','hat'].forEach((k,i)=>setTimeout(()=>drum(k),i*300));setTimeout(()=>{const old=$('accOn').checked;$('accOn').checked=true;accompany(60,60,1.2);$('accOn').checked=old;},1300);};
 if(prefs.musicVol!=null)$('musicVol').value=prefs.musicVol;
 $('musicVol').oninput=()=>{prefs.musicVol=+$('musicVol').value;store.set('pk-prefs',prefs);if(musicBus)bus();};
+
+/* ---------- Menu tab ---------- */
+function showTab(t){
+  ['main','songs','set'].forEach(x=>{$('tab-'+x).hidden=x!==t;});
+  document.querySelectorAll('.tabbtn').forEach(b=>{if(b.dataset.tab===t)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
+  if(t!=='main'){stopGame();stopDemo();}
+  window.scrollTo(0,0);if(t==='main'){if(mode==='game')setTimeout(fitGame,30);else render();}
+}
+document.querySelectorAll('.tabbtn').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+$('kbChip').onclick=()=>showTab('set');$('changeSong').onclick=()=>showTab('songs');
+
+/* ---------- Pasang di HP (aplikasi web) ---------- */
+let installEvt=null;
+const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+function installState(){
+  if(standalone()){$('installText').textContent='Piano Kecilku sudah terpasang di HP ini.';$('installBtn').hidden=true;$('installCard').hidden=true;return;}
+  if(installEvt){$('installText').textContent='Ketuk tombol di bawah, lalu pilih Pasang. Ikon Piano Kecilku akan muncul di layar HP.';$('installBtn').hidden=false;
+    if(!prefs.installLater)$('installCard').hidden=false;}
+  else $('installText').textContent='Di Chrome, ketuk menu ⋮ lalu pilih "Pasang aplikasi" atau "Tambahkan ke layar utama". Ikon Piano Kecilku akan muncul di layar HP.';
+}
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;installState();});
+addEventListener('appinstalled',()=>{installEvt=null;$('installText').textContent='Terpasang. Buka Piano Kecilku dari ikon di layar HP.';$('installBtn').hidden=true;$('installCard').hidden=true;});
+async function doInstall(){if(!installEvt){showTab('set');return;}installEvt.prompt();try{await installEvt.userChoice;}catch(e){}installEvt=null;installState();}
+$('installBtn').onclick=doInstall;$('installBtn2').onclick=doInstall;
+$('installLater').onclick=()=>{prefs.installLater=true;store.set('pk-prefs',prefs);$('installCard').hidden=true;};
+installState();
+try{if('serviceWorker' in navigator&&location.protocol==='https:'&&!/claude\.ai|claudeusercontent/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
+
 /* ---------- Tambah lagu sendiri ---------- */
 function openEditor(){$('editor').hidden=false;$('cTitle').value='';$('cNotes').value='';$('cDo').value='60';showParse();$('editor').scrollIntoView({behavior:'smooth',block:'start'});$('cTitle').focus();}
 function editorNotes(){return parseAngka($('cNotes').value,+$('cDo').value);}
@@ -707,8 +785,7 @@ $('cTry').onclick=()=>{const n=showParse();if(!n.length)return;const ms=n.map(x=
 $('cSave').onclick=()=>{const n=showParse();if(!n.length){$('cNotes').focus();return;}
   const name=$('cTitle').value.trim()||'Lagu tanpa judul';
   const s={id:'c'+Date.now(),name,tonic:+$('cDo').value,src:$('cNotes').value,group:'Lagu saya',lvl:'Lagu saya',custom:true,meter:4,pickup:0,notes:n};
-  custom.push(s);saveCustom();stopDemo();$('editor').hidden=true;selectSong(s);
-  document.querySelector('.stage').scrollIntoView({behavior:'smooth',block:'start'});};
+  custom.push(s);saveCustom();stopDemo();$('editor').hidden=true;selectSong(s);showTab('main');};
 $('cCancel').onclick=()=>{stopDemo();$('editor').hidden=true;render();};
 let delArmed=false;
 $('delBtn').onclick=()=>{
@@ -716,7 +793,7 @@ $('delBtn').onclick=()=>{
   custom=custom.filter(c=>c!==song);saveCustom();delete best[song.id];store.set('pk-best',best);selectSong(BUILTIN[0]);};
 
 /* ---------- MIDI kabel ---------- */
-function setConn(state,text,help){$('dot').className='dot '+state;$('connText').textContent=text;if(help!==undefined)$('connHelp').textContent=help;}
+function setConn(state,text,help){$('dot').className='dot '+state;$('dot2').className='dot '+state;$('kbChipText').textContent=state==='on'?'🎹 Tersambung':state==='err'?'🎹 Bermasalah':'🎹 Belum tersambung';$('connText').textContent=text;if(help!==undefined)$('connHelp').textContent=help;}
 /* Pesan dari keyboard: nada ditekan, dilepas, dan pedal sustain */
 const held={};const sustained=new Set();let sustain=false;
 function midiMsg(cmd,n,v){
