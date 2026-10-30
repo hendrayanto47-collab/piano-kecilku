@@ -136,6 +136,19 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
 .result{background:var(--card);color:var(--ink);border-radius:20px;padding:24px;max-width:340px;width:100%;text-align:center;display:flex;flex-direction:column;gap:12px}
 .big-stars{font-size:44px;letter-spacing:6px;color:var(--sun)}
 .big-stars .off{color:var(--line)}
+/* Layar penuh saat main game */
+body.fs{overflow:hidden}
+body.fs .wrap>*:not(.stage){display:none!important}
+body.fs .stage{position:fixed;inset:0;z-index:15;border-radius:0;border:0;gap:8px;
+  padding:max(8px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(8px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+body.fs .modes,body.fs .legend,body.fs .speeds,body.fs #optsCtl,body.fs #gameCtl .toggle,body.fs #fsWant{display:none!important}
+body.fs .stage-top h2{font-size:18px}
+body.fs .kb-wrap{flex:1;min-height:0;overflow-y:hidden;display:flex;flex-direction:column}
+body.fs .kb{height:min(170px,34vh);flex:none}
+body.fs #gameCtl{flex-wrap:nowrap}
+body.fs #gameCtl .btn{padding:8px 14px}
+#fsExit{display:none}
+body.fs #fsExit{display:inline-block;margin-left:auto}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -217,14 +230,16 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
     <div class="controls" id="gameCtl" hidden>
       <button class="btn" id="gameBtn">▶ Mulai game</button>
       <button class="btn ghost" id="watchBtn">👀 Contohkan dulu</button>
+      <button class="btn ghost" id="fsExit">✕ Keluar layar penuh</button>
       <div class="speeds" role="group" aria-label="Kecepatan">
         <button class="chip" data-speed="pelan">🐢 Pelan</button><button class="chip" data-speed="sedang">🐇 Sedang</button><button class="chip" data-speed="cepat">🚀 Cepat</button>
       </div>
+      <label class="toggle" id="fsWant"><input type="checkbox" id="fsOn" checked> Layar penuh saat main</label>
       <label class="toggle"><input type="checkbox" id="guideOn" checked> Melodi panduan</label>
       <label class="toggle"><input type="checkbox" id="drumOn" checked> Ketukan drum</label>
       <p class="legend" style="flex-basis:100%">Tekan tombol yang warnanya sama saat balok menyentuh garis bawah. Garis tebal mendatar = awal ketukan pertama tiap birama.</p>
     </div>
-    <div class="controls">
+    <div class="controls" id="optsCtl">
       <label class="toggle"><input type="checkbox" id="accOn" checked> Musik pengiring</label>
       <label class="toggle"><input type="checkbox" id="anyOct" checked> Boleh oktaf mana saja</label>
       <button class="btn danger" id="delBtn" hidden>Hapus lagu ini</button>
@@ -520,7 +535,8 @@ const SPEEDS={pelan:{beat:0.85,fall:3.2},sedang:{beat:0.62,fall:2.5},cepat:{beat
 const HIT_WIN=0.3, PERFECT=0.12, LEAD=3;
 let mode='learn', speed='pelan', game=null;
 const cv=$('game'), cx=cv.getContext('2d');
-function sizeCanvas(){const w=$('kb').offsetWidth,h=Math.min(300,Math.max(220,Math.round(innerHeight*0.33))),dpr=window.devicePixelRatio||1;
+function sizeCanvas(){const w=$('kb').offsetWidth,dpr=window.devicePixelRatio||1;let h=Math.min(300,Math.max(220,Math.round(innerHeight*0.33)));
+  if(document.body.classList.contains('fs')){cv.style.height='10px';h=Math.max(120,$('kbWrap').clientHeight-$('kb').offsetHeight-2);}
   cv.style.width=w+'px';cv.style.height=h+'px';cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);cx.setTransform(dpr,0,0,dpr,0,0);}
 function laneOf(m){const el=keyEl[onScreen(m)];if(!el)return null;return {x:el.offsetLeft,w:el.offsetWidth,black:el.classList.contains('b')};}
 function schedule(){const sp=SPEEDS[speed];let t=0;return song.notes.map(n=>{const o={m:n.m,t,len:n.d*sp.beat,state:0};t+=n.d*sp.beat;return o;});}
@@ -622,9 +638,10 @@ function draw(now,idle){
 function renderGameIdle(){
   document.querySelectorAll('.target').forEach(e=>e.classList.remove('target'));document.querySelectorAll('.fing').forEach(e=>e.remove());
   $('progressText').textContent=song.notes.length+' nada';$('barFill').style.width='0%';
-  requestAnimationFrame(()=>{sizeCanvas();centerKb();draw(-LEAD,true);});
+  requestAnimationFrame(fitGame);
 }
 function setMode(md){
+  if(md!=='game'&&document.body.classList.contains('fs'))exitFs();
   mode=md;prefs.mode=md;store.set('pk-prefs',prefs);stopGame();stopDemo();
   const g=md==='game';$('modeLearn').setAttribute('aria-pressed',!g);$('modeGame').setAttribute('aria-pressed',g);
   $('nowBox').hidden=g;$('nextBox').hidden=g;$('learnCtl').hidden=g;$('gameCtl').hidden=!g;cv.hidden=!g;
@@ -633,13 +650,36 @@ function setMode(md){
 function setSpeed(sp){speed=sp;prefs.speed=sp;store.set('pk-prefs',prefs);
   document.querySelectorAll('[data-speed]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.speed===sp));if(mode==='game'&&!(game&&game.running))renderGameIdle();}
 $('modeLearn').onclick=()=>setMode('learn');$('modeGame').onclick=()=>setMode('game');
-$('gameBtn').onclick=()=>{if(game&&game.running&&!game.auto){stopGame();renderGameIdle();}else{stopGame();startGame(false);}};
-$('watchBtn').onclick=()=>{if(game&&game.running&&game.auto){stopGame();renderGameIdle();}else{stopGame();startGame(true);}};
+async function goGame(auto){stopGame();if($('fsOn').checked)await enterFs();startGame(auto);}
+$('gameBtn').onclick=()=>{if(game&&game.running&&!game.auto){stopGame();renderGameIdle();}else goGame(false);};
+$('watchBtn').onclick=()=>{if(game&&game.running&&game.auto){stopGame();renderGameIdle();}else goGame(true);};
 ['guideOn','drumOn'].forEach(id=>{if(prefs[id]===false)$(id).checked=false;$(id).onchange=()=>{prefs[id]=$(id).checked;store.set('pk-prefs',prefs);};});
 document.querySelectorAll('[data-speed]').forEach(b=>b.onclick=()=>setSpeed(b.dataset.speed));
 $('kbWrap').addEventListener('scroll',()=>{if(mode==='game'&&!(game&&game.running))draw(-LEAD,true);},{passive:true});
-addEventListener('resize',()=>{if(mode==='game'){sizeCanvas();if(!(game&&game.running))draw(-LEAD,true);}});
+addEventListener('resize',()=>setTimeout(fitGame,100));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'&&game&&game.running){stopGame();renderGameIdle();}});
+
+
+/* ---------- Layar penuh ---------- */
+async function enterFs(){
+  if(document.body.classList.contains('fs'))return;
+  document.body.classList.add('fs');
+  try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement)await document.documentElement.requestFullscreen({navigationUI:'hide'});}catch(e){}
+  try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape');}catch(e){}
+  await new Promise(r=>setTimeout(r,350));fitGame();
+}
+function exitFs(){
+  document.body.classList.remove('fs');
+  try{if(screen.orientation&&screen.orientation.unlock)screen.orientation.unlock();}catch(e){}
+  try{if(document.fullscreenElement)document.exitFullscreen();}catch(e){}
+  setTimeout(fitGame,350);
+}
+function fitGame(){if(mode!=='game')return;sizeCanvas();centerKb();if(!(game&&game.running))draw(-LEAD,true);}
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&document.body.classList.contains('fs')){document.body.classList.remove('fs');setTimeout(fitGame,350);}});
+if(screen.orientation)screen.orientation.addEventListener('change',()=>setTimeout(fitGame,300));
+$('fsExit').onclick=()=>{stopGame();exitFs();renderGameIdle();};
+if(prefs.fsOn===false)$('fsOn').checked=false;
+$('fsOn').onchange=()=>{prefs.fsOn=$('fsOn').checked;store.set('pk-prefs',prefs);};
 
 /* ---------- Tambah lagu sendiri ---------- */
 function openEditor(){$('editor').hidden=false;$('cTitle').value='';$('cNotes').value='';$('cDo').value='60';showParse();$('editor').scrollIntoView({behavior:'smooth',block:'start'});$('cTitle').focus();}
