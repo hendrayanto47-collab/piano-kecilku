@@ -97,7 +97,16 @@ header{display:flex;flex-direction:column;gap:6px}
 .next span{flex:none;min-width:40px;padding:4px 8px;border-radius:99px;border:1.5px solid var(--line);text-align:center;font-weight:700;font-size:14px}
 .next span:first-child{border-color:var(--sun);background:var(--sun);color:var(--sun-ink)}
 
-.kb-wrap{overflow-x:auto;scroll-behavior:smooth}
+.kb-wrap{overflow-x:auto}
+#game{display:block;touch-action:none}
+.modes{display:flex;background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg{flex:1;border:0;border-radius:9px;padding:9px 10px;font-weight:800;font-family:var(--display);font-size:16px;background:transparent;color:var(--muted)}
+.seg[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.speeds{display:flex;gap:6px;flex-wrap:wrap}
+.kb.colored .w{background:linear-gradient(to bottom,var(--keyw) 0 61%,var(--kc) 61% 80%,var(--keyw) 80%)}
+.kb.colored .b{box-shadow:inset 0 -12px 0 var(--kc)}
+.kb.colored .w.down,.kb.colored .b.down{background:var(--ok)!important}
+.kb.colored .w.wrong,.kb.colored .b.wrong{background:var(--bad)!important}
 .kb{position:relative;height:170px;min-width:320px;display:flex;touch-action:none;user-select:none;-webkit-user-select:none}
 .w{flex:1;background:var(--keyw);border:1px solid var(--keyline);border-radius:0 0 10px 10px;margin-right:-1px;position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:8px;gap:2px}
 .w .sol{font-family:var(--display);font-weight:800;font-size:15px;color:#1B2340;line-height:1}
@@ -186,23 +195,33 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
       <h2 id="songTitle">—</h2>
       <span id="progressText">0 / 0</span>
     </div>
+    <div class="modes" role="group" aria-label="Pilih mode"><button class="seg" id="modeLearn" aria-pressed="true">📖 Mode belajar</button><button class="seg" id="modeGame" aria-pressed="false">🎮 Mode game</button></div>
     <div class="bar"><i id="barFill"></i></div>
-    <div class="now">
+    <div class="now" id="nowBox">
       <div class="bubble" id="bubble"><div><b id="bigSol">Do</b><br><span id="bigLet">C</span></div></div>
       <div class="now-txt">
         <p id="hint">Tekan Do</p>
         <p id="subhint">Pakai jari 1 (jempol) tangan kanan</p>
       </div>
     </div>
-    <div>
+    <div id="nextBox">
       <p class="legend" style="margin-bottom:6px">Nada selanjutnya</p>
       <div class="next" id="next"></div>
     </div>
-    <div class="kb-wrap" id="kbWrap"><div class="kb" id="kb" aria-label="Piano di layar"></div></div>
+    <div class="kb-wrap" id="kbWrap"><canvas id="game" hidden></canvas><div class="kb" id="kb" aria-label="Piano di layar"></div></div>
     <p class="legend">Titik biru = <b>Do tengah</b>. Di keyboard Rixton 61 tuts, Do tengah adalah tombol C ketiga dari kiri (tombol putih tepat di kiri dua tombol hitam).</p>
-    <div class="controls">
+    <div class="controls" id="learnCtl">
       <button class="btn" id="demoBtn">▶ Dengar contoh</button>
       <button class="btn ghost" id="restartBtn">Ulang dari awal</button>
+    </div>
+    <div class="controls" id="gameCtl" hidden>
+      <button class="btn" id="gameBtn">▶ Mulai game</button>
+      <div class="speeds" role="group" aria-label="Kecepatan">
+        <button class="chip" data-speed="pelan">🐢 Pelan</button><button class="chip" data-speed="sedang">🐇 Sedang</button><button class="chip" data-speed="cepat">🚀 Cepat</button>
+      </div>
+      <p class="legend" style="flex-basis:100%">Tekan tombol yang warnanya sama saat balok menyentuh garis bawah.</p>
+    </div>
+    <div class="controls">
       <label class="toggle"><input type="checkbox" id="accOn" checked> Musik pengiring</label>
       <label class="toggle"><input type="checkbox" id="anyOct" checked> Boleh oktaf mana saja</label>
       <button class="btn danger" id="delBtn" hidden>Hapus lagu ini</button>
@@ -218,6 +237,7 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
       <li><b>Layar tetap menyala</b> selama aplikasi terbuka. Kalau tulisan di atas belum hijau, ketuk layar sekali.</li>
       <li><b>Tambah lagu:</b> ketuk kartu "+ Tambah lagu", tempel not angka dari internet atau buku lagu, tekan "Dengar" untuk mengecek, lalu "Simpan". Lagu tersimpan di HP ini.</li>
       <li><b>Pilih suara:</b> ketuk salah satu alat musik (piano, gitar, biola, angklung, gamelan, dan lainnya), lalu kecilkan volume keyboard Rixton. Suara terdengar dari speaker HP, dan pedal sustain ikut berfungsi. Supaya lebih merdu, sambungkan HP ke speaker Bluetooth. Angklung, gamelan, dan kotak musik dibuat langsung oleh aplikasi, jadi tetap jalan tanpa internet. Rekaman: Salamander Grand Piano (Alexander Holm, CC-BY 3.0) dan tonejs-instruments (Nicholaus Brosowsky).</li>
+      <li><b>Mode game:</b> balok warna turun ke keyboard. Setiap nada punya warna (Do merah, Re oranye, Mi kuning, Fa hijau, Sol biru, La nila, Si ungu), dan warna yang sama ada di tombol piano layar. Mulai dengan kecepatan Pelan.</li>
       <li><b>Urutan belajar:</b> mulai dari pelajaran 1, ulangi sampai dapat 3 bintang, baru pindah. Cukup 10–15 menit sehari.</li>
     </ol>
   </details>
@@ -394,13 +414,13 @@ function setRange(){
 function buildKeyboard(){
   const kb=$('kb');kb.innerHTML='';keyEl={};
   const whites=[];for(let m=LOW;m<=HIGH;m++)if(!letter(m).includes('#'))whites.push(m);
-  kb.style.minWidth=Math.max(320,whites.length*32)+'px';
+  kb.style.minWidth=Math.max(320,whites.length*32)+'px';kb.classList.toggle('colored',mode==='game');
   const W=100/whites.length;
   whites.forEach((m,i)=>{
-    const d=document.createElement('div');d.className='w'+(m===60?' mid':'');d.dataset.m=m;
+    const d=document.createElement('div');d.className='w'+(m===60?' mid':'');d.dataset.m=m;d.style.setProperty('--kc',noteColor(m));
     d.innerHTML='<span class="sol">'+solf(m)+'</span><span class="let">'+letter(m)+(m===60?'4':'')+'</span>';
     kb.appendChild(d);keyEl[m]=d;
-    if(m+1<=HIGH&&letter(m+1).includes('#')){const b=document.createElement('div');b.className='b';b.dataset.m=m+1;
+    if(m+1<=HIGH&&letter(m+1).includes('#')){const b=document.createElement('div');b.className='b';b.dataset.m=m+1;b.style.setProperty('--kc',noteColor(m));
       b.style.left=((i+1)*W-W*0.3)+'%';b.style.width=(W*0.6)+'%';kb.appendChild(b);keyEl[m+1]=b;}
   });
 }
@@ -430,10 +450,11 @@ function renderSongs(){
 function selectSong(s){song=s;delArmed=false;renderSongs();restart();}
 
 /* ---------- Pelajaran ---------- */
-function restart(){stopDemo();idx=0;mistakes=0;$('overlay').hidden=true;setRange();render();
+function restart(){stopDemo();stopGame();idx=0;mistakes=0;$('overlay').hidden=true;setRange();render();
   $('delBtn').hidden=!song.custom;$('delBtn').textContent='Hapus lagu ini';}
 function render(){
   $('songTitle').textContent=song.name;
+  if(mode==='game'){renderGameIdle();return;}
   $('progressText').textContent=Math.min(idx,song.notes.length)+' / '+song.notes.length+' nada';
   $('barFill').style.width=(idx/song.notes.length*100)+'%';
   document.querySelectorAll('.target').forEach(e=>e.classList.remove('target'));
@@ -448,6 +469,7 @@ function render(){
 }
 function press(m){
   $('lastNote').innerHTML='Tombol terakhir ditekan: <b>'+solf(m)+'</b> ('+letter(m)+Math.floor(m/12-1)+')';
+  if(mode==='game'){gameHit(m);return;}
   if(demoToken)return;
   if(idx>=song.notes.length){flash(m,'down');return;}
   const t=song.notes[idx].m, ok=$('anyOct').checked?(((m-t)%12)+12)%12===0:(m===t);
@@ -482,6 +504,106 @@ async function playNotes(notes,tonic,btn,label){
   }
   if(demoToken===my){stopDemo();render();}
 }
+
+
+/* ---------- Mode game: balok nada jatuh ---------- */
+const NOTE_COL={C:'#E8433A',D:'#F28C28',E:'#E9B800',F:'#3FAE45',G:'#1E9BD7',A:'#5B5FD9',B:'#A94BC4'};
+function noteColor(m){return NOTE_COL[letter(m)[0]];}
+const SPEEDS={pelan:{beat:0.85,fall:3.2},sedang:{beat:0.62,fall:2.5},cepat:{beat:0.45,fall:1.9}};
+const HIT_WIN=0.3, PERFECT=0.12, LEAD=3;
+let mode='learn', speed='pelan', game=null;
+const cv=$('game'), cx=cv.getContext('2d');
+function sizeCanvas(){const w=$('kb').offsetWidth,h=Math.min(300,Math.max(220,Math.round(innerHeight*0.33))),dpr=window.devicePixelRatio||1;
+  cv.style.width=w+'px';cv.style.height=h+'px';cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);cx.setTransform(dpr,0,0,dpr,0,0);}
+function laneOf(m){const el=keyEl[onScreen(m)];if(!el)return null;return {x:el.offsetLeft,w:el.offsetWidth,black:el.classList.contains('b')};}
+function schedule(){const sp=SPEEDS[speed];let t=0;return song.notes.map(n=>{const o={m:n.m,t,len:n.d*sp.beat,state:0};t+=n.d*sp.beat;return o;});}
+function centerKb(){const w=$('kbWrap');if(w.scrollWidth<=w.clientWidth)return;const ls=song.notes.map(n=>laneOf(n.m)).filter(Boolean);if(!ls.length)return;
+  const lo=Math.min(...ls.map(l=>l.x)),hi=Math.max(...ls.map(l=>l.x+l.w));w.scrollLeft=(lo+hi)/2-w.clientWidth/2;}
+function addFx(m,txt,c){const L=laneOf(m);if(!L||!game)return;game.fx.push({x:L.x+L.w/2,txt,c,t:performance.now()/1000-game.start});}
+function startGame(){ac();keepAwake();stopDemo();$('overlay').hidden=true;
+  game={notes:schedule(),sp:SPEEDS[speed],start:performance.now()/1000+LEAD,running:true,score:0,combo:0,maxCombo:0,perfect:0,good:0,miss:0,fx:[],ci:0,lastChord:'',since:99};
+  $('gameBtn').textContent='■ Berhenti';centerKb();requestAnimationFrame(loop);}
+function stopGame(){if(game)game.running=false;$('gameBtn').textContent='▶ Mulai game';}
+function loop(){
+  if(!game||!game.running)return;
+  const now=performance.now()/1000-game.start;
+  while(game.ci<game.notes.length&&game.notes[game.ci].t<=now){const n=game.notes[game.ci],c=chordFor(n.m,song.tonic),key=c?c.join():'';
+    if(c&&(key!==game.lastChord||game.since>=2)){accompany(n.m,song.tonic,Math.max(0.6,n.len*1.5));game.lastChord=key;game.since=0;}
+    game.since+=n.len/game.sp.beat;game.ci++;}
+  for(const n of game.notes)if(n.state===0&&now-n.t>HIT_WIN){n.state=3;game.miss++;game.combo=0;addFx(n.m,'Terlewat','#8A93AE');}
+  const done=game.notes.filter(n=>n.state).length;
+  $('progressText').textContent='Skor '+game.score+' · '+done+' / '+game.notes.length;$('barFill').style.width=(done/game.notes.length*100)+'%';
+  draw(now);
+  const last=game.notes[game.notes.length-1];
+  if(now>last.t+last.len+1.2){stopGame();finishGame();return;}
+  requestAnimationFrame(loop);
+}
+function gameHit(m){
+  if(!game||!game.running){flash(m,'down');return;}
+  const now=performance.now()/1000-game.start;let hit=null,bd=9;
+  for(const n of game.notes){if(n.state)continue;const d=Math.abs(n.t-now);if(d>HIT_WIN)continue;
+    const ok=$('anyOct').checked?(((m-n.m)%12)+12)%12===0:m===n.m;if(ok&&d<bd){bd=d;hit=n;}}
+  if(hit){const p=bd<=PERFECT;hit.state=p?1:2;game.combo++;game.maxCombo=Math.max(game.maxCombo,game.combo);
+    game.score+=(p?100:60)+Math.min(game.combo,20)*5;if(p)game.perfect++;else game.good++;
+    flash(m,'down');addFx(hit.m,p?'Tepat!':'Bagus',p?'#1F9E66':'#2F5BEA');}
+  else{game.combo=0;flash(m,'wrong',300);}
+}
+function finishGame(){
+  const tot=game.notes.length,hits=game.perfect+game.good,r=hits/tot,st=r>=0.9?3:r>=0.7?2:1;
+  const key='g:'+song.id;if(!best[key]||st>best[key]){best[key]=st;store.set('pk-best',best);}
+  $('resTitle').textContent=st===3?'Luar biasa!':st===2?'Keren!':'Ayo coba lagi!';
+  $('resStars').innerHTML=starHtml(st);
+  $('resText').textContent='Skor '+game.score+' · Tepat '+game.perfect+' · Bagus '+game.good+' · Terlewat '+game.miss+(game.maxCombo>2?' · Kombo terbaik '+game.maxCombo:'');
+  const list=allSongs(),i=list.indexOf(song);$('nextBtn').hidden=i===list.length-1;
+  $('againBtn').textContent='Main lagi';$('overlay').hidden=false;$('againBtn').focus();
+}
+function rr(x,y,w,h,r){cx.beginPath();if(cx.roundRect)cx.roundRect(x,y,w,h,r);else cx.rect(x,y,w,h);}
+function draw(now,idle){
+  const dpr=window.devicePixelRatio||1,W=cv.width/dpr,H=cv.height/dpr,cs=getComputedStyle(document.documentElement);
+  const bg=cs.getPropertyValue('--card').trim(),line=cs.getPropertyValue('--line').trim(),ink=cs.getPropertyValue('--ink').trim(),muted=cs.getPropertyValue('--muted').trim();
+  cx.clearRect(0,0,W,H);cx.fillStyle=bg;cx.fillRect(0,0,W,H);
+  cx.fillStyle=line;for(const k in keyEl){const el=keyEl[k];if(el.classList.contains('w'))cx.fillRect(el.offsetLeft,0,1,H);}
+  const hitY=H-4,fall=SPEEDS[speed].fall,notes=idle?schedule():game.notes;
+  cx.fillStyle=ink;cx.globalAlpha=0.35;cx.fillRect(0,hitY-2,W,4);cx.globalAlpha=1;
+  cx.textAlign='center';cx.textBaseline='bottom';cx.font='800 12px "Baloo 2", sans-serif';
+  for(const n of notes){
+    if(n.state===1||n.state===2)continue;
+    const yB=hitY-(n.t-now)/fall*hitY,h=Math.max(18,n.len/fall*hitY-4),yT=yB-h;
+    if(yB<0||yT>H)continue;const L=laneOf(n.m);if(!L)continue;const pad=L.black?1:3;
+    cx.globalAlpha=n.state===3?0.25:1;cx.fillStyle=noteColor(n.m);rr(L.x+pad,yT,L.w-pad*2,h,6);cx.fill();
+    if(L.w>=16){cx.fillStyle='#FFFFFF';cx.fillText(solf(n.m),L.x+L.w/2,yB-3);}
+    cx.globalAlpha=1;
+  }
+  const sl=$('kbWrap').scrollLeft,vw=$('kbWrap').clientWidth;
+  if(game&&!idle){
+    game.fx=game.fx.filter(f=>now-f.t<0.8);
+    for(const f of game.fx){cx.globalAlpha=1-(now-f.t)/0.8;cx.fillStyle=f.c;cx.font='800 17px "Baloo 2", sans-serif';cx.fillText(f.txt,f.x,hitY-24-(now-f.t)*40);}
+    cx.globalAlpha=1;cx.textAlign='left';cx.textBaseline='top';cx.fillStyle=ink;cx.font='800 16px "Baloo 2", sans-serif';
+    cx.fillText('Skor '+game.score,sl+8,6);if(game.combo>1){cx.fillStyle=muted;cx.fillText('Kombo x'+game.combo,sl+8,26);}
+    if(now<0){cx.textAlign='center';cx.textBaseline='middle';cx.fillStyle=ink;cx.font='800 60px "Baloo 2", sans-serif';cx.fillText(String(Math.ceil(-now)),sl+vw/2,H/2);}
+  }else{
+    cx.textAlign='center';cx.textBaseline='middle';cx.fillStyle=muted;cx.font='800 18px "Baloo 2", sans-serif';cx.fillText('Tekan ▶ Mulai game',sl+vw/2,H/2);
+  }
+}
+function renderGameIdle(){
+  document.querySelectorAll('.target').forEach(e=>e.classList.remove('target'));document.querySelectorAll('.fing').forEach(e=>e.remove());
+  $('progressText').textContent=song.notes.length+' nada';$('barFill').style.width='0%';
+  requestAnimationFrame(()=>{sizeCanvas();centerKb();draw(-LEAD,true);});
+}
+function setMode(md){
+  mode=md;prefs.mode=md;store.set('pk-prefs',prefs);stopGame();stopDemo();
+  const g=md==='game';$('modeLearn').setAttribute('aria-pressed',!g);$('modeGame').setAttribute('aria-pressed',g);
+  $('nowBox').hidden=g;$('nextBox').hidden=g;$('learnCtl').hidden=g;$('gameCtl').hidden=!g;cv.hidden=!g;
+  $('kb').classList.toggle('colored',g);restart();
+}
+function setSpeed(sp){speed=sp;prefs.speed=sp;store.set('pk-prefs',prefs);
+  document.querySelectorAll('[data-speed]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.speed===sp));if(mode==='game'&&!(game&&game.running))renderGameIdle();}
+$('modeLearn').onclick=()=>setMode('learn');$('modeGame').onclick=()=>setMode('game');
+$('gameBtn').onclick=()=>{if(game&&game.running){stopGame();renderGameIdle();}else startGame();};
+document.querySelectorAll('[data-speed]').forEach(b=>b.onclick=()=>setSpeed(b.dataset.speed));
+$('kbWrap').addEventListener('scroll',()=>{if(mode==='game'&&!(game&&game.running))draw(-LEAD,true);},{passive:true});
+addEventListener('resize',()=>{if(mode==='game'){sizeCanvas();if(!(game&&game.running))draw(-LEAD,true);}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'&&game&&game.running){stopGame();renderGameIdle();}});
 
 /* ---------- Tambah lagu sendiri ---------- */
 function openEditor(){$('editor').hidden=false;$('cTitle').value='';$('cNotes').value='';$('cDo').value='60';showParse();$('editor').scrollIntoView({behavior:'smooth',block:'start'});$('cTitle').focus();}
@@ -566,7 +688,7 @@ $('btBtn').onclick=connectBt;
 $('connectBtn').onclick=connect;
 $('demoBtn').onclick=()=>playNotes(song.notes,song.tonic,$('demoBtn'));
 $('restartBtn').onclick=restart;
-$('againBtn').onclick=restart;
+$('againBtn').onclick=()=>{$('overlay').hidden=true;mode==='game'?startGame():restart();};
 $('nextBtn').onclick=()=>{const list=allSongs(),i=list.indexOf(song);selectSong(list[Math.min(i+1,list.length-1)]);};
 $('accOn').onchange=()=>{prefs.acc=$('accOn').checked;store.set('pk-prefs',prefs);};
 $('anyOct').onchange=()=>$('anyOct').blur();
@@ -576,7 +698,8 @@ document.addEventListener('pointerdown',()=>ac(),{passive:true});
 cur=INSTR.find(i=>i.id===prefs.instr)||INSTR[0];renderInstr();loadInstrument(cur);
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('overlay').hidden)$('overlay').hidden=true;});
 
-buildKeyboard();renderSongs();restart();keepAwake();
+speed=SPEEDS[prefs.speed]?prefs.speed:'pelan';setSpeed(speed);
+buildKeyboard();renderSongs();setMode(prefs.mode==='game'?'game':'learn');keepAwake();
 </script>
 
 </body>
