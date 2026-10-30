@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#11162A">
+</head>
+<body>
+<title>Piano Kecilku</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: satu kolom ramah HP — status sambungan, pilihan lagu, kartu "nada berikutnya", lalu keyboard di bawah sebagai panggung utama */
+:root{
+  --paper:#F2F5FB; --card:#FFFFFF; --ink:#1B2340; --muted:#596383; --line:#D6DCEA;
+  --accent:#2F5BEA; --accent-ink:#FFFFFF; --sun:#FFC83A; --sun-ink:#3A2A00;
+  --ok:#1F9E66; --bad:#E0444A; --keyw:#FFFFFF; --keyb:#1A1F33; --keyline:#B9C2D8;
+  --display:"Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#11162A; --card:#1A2138; --ink:#E7EBF7; --muted:#9AA3C3; --line:#2B3452;
+  --accent:#7B9AFF; --accent-ink:#0E1430; --sun:#FFC83A; --sun-ink:#3A2A00;
+  --ok:#38C98A; --bad:#FF6B70; --keyw:#E8EBF4; --keyb:#0B0E1A; --keyline:#47506E; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --paper:#11162A; --card:#1A2138; --ink:#E7EBF7; --muted:#9AA3C3; --line:#2B3452;
+  --accent:#7B9AFF; --accent-ink:#0E1430; --sun:#FFC83A; --sun-ink:#3A2A00;
+  --ok:#38C98A; --bad:#FF6B70; --keyw:#E8EBF4; --keyb:#0B0E1A; --keyline:#47506E; color-scheme:dark }
+[hidden]{display:none!important}
+html,body{background:var(--paper);color:var(--ink)}
+body{font-family:var(--body);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--display);line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:30px;font-weight:800}
+h2{font-size:20px;font-weight:800}
+p{margin:0}
+.muted{color:var(--muted)}
+button{font:inherit;cursor:pointer}
+button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.conn{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.conn-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--muted);flex:none}
+.dot.on{background:var(--ok)} .dot.warn{background:var(--sun)} .dot.err{background:var(--bad)}
+#connText{font-weight:700;flex:1;min-width:0}
+.btn{border:0;border-radius:12px;padding:10px 16px;font-weight:700;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
+#connHelp{font-size:14px;color:var(--muted)}
+#lastNote{font-size:14px}
+#lastNote b{font-family:var(--display);font-size:18px}
+
+.songs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.song{text-align:left;background:var(--card);color:var(--ink);border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.song[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.song .lvl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.song .nm{font-family:var(--display);font-weight:800;font-size:17px;line-height:1.15}
+.song .st{font-size:15px;letter-spacing:2px;color:var(--sun)}
+.song .st .off{color:var(--line)}
+
+.stage{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.stage-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+#progressText{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:var(--ok);transition:width .25s}
+.now{display:flex;align-items:center;gap:16px}
+.bubble{width:96px;height:96px;flex:none;border-radius:50%;background:var(--sun);color:var(--sun-ink);display:grid;place-items:center;text-align:center;transition:transform .15s,background .15s}
+.bubble b{font-family:var(--display);font-weight:800;font-size:34px;line-height:1}
+.bubble span{font-size:14px;font-weight:700}
+.bubble.good{background:var(--ok);color:#fff;transform:scale(1.06)}
+.bubble.bad{background:var(--bad);color:#fff;animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.now-txt{display:flex;flex-direction:column;gap:4px;min-width:0}
+#hint{font-size:18px;font-weight:700}
+#subhint{font-size:14px;color:var(--muted)}
+.next{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.next span{flex:none;min-width:40px;padding:4px 8px;border-radius:99px;border:1.5px solid var(--line);text-align:center;font-weight:700;font-size:14px}
+.next span:first-child{border-color:var(--sun);background:var(--sun);color:var(--sun-ink)}
+
+.kb-wrap{overflow-x:auto}
+.kb{position:relative;height:170px;min-width:320px;display:flex;touch-action:none;user-select:none;-webkit-user-select:none}
+.w{flex:1;background:var(--keyw);border:1px solid var(--keyline);border-radius:0 0 10px 10px;margin-right:-1px;position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:8px;gap:2px}
+.w .sol{font-family:var(--display);font-weight:800;font-size:15px;color:#1B2340;line-height:1}
+.w .let{font-size:11px;color:#596383}
+.w.mid::before{content:"";position:absolute;bottom:44px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.b{position:absolute;top:0;height:60%;background:var(--keyb);border-radius:0 0 7px 7px;z-index:2}
+.w.target,.b.target{background:var(--sun)}
+.w.down,.b.down{background:var(--ok)!important}
+.w.wrong,.b.wrong{background:var(--bad)!important}
+.w.demo,.b.demo{background:var(--accent)!important}
+.fing{position:absolute;top:10px;width:26px;height:26px;border-radius:50%;background:var(--sun-ink);color:var(--sun);font-weight:800;display:grid;place-items:center;font-size:14px}
+.legend{font-size:13px;color:var(--muted)}
+
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.toggle{display:flex;align-items:center;gap:8px;font-size:14px}
+.toggle input{width:20px;height:20px;accent-color:var(--accent)}
+
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+summary{font-family:var(--display);font-weight:800;font-size:17px;cursor:pointer}
+details ol,details ul{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:65ch}
+
+.overlay{position:fixed;inset:0;background:rgba(10,14,30,.55);display:grid;place-items:center;z-index:20;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.result{background:var(--card);color:var(--ink);border-radius:20px;padding:24px;max-width:340px;width:100%;text-align:center;display:flex;flex-direction:column;gap:12px}
+.big-stars{font-size:44px;letter-spacing:6px;color:var(--sun)}
+.big-stars .off{color:var(--line)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Piano Kecilku</h1>
+      <p class="muted">Ikuti tombol kuning. Lagu menunggu sampai kamu menekan nada yang benar.</p>
+    </div>
+  </header>
+
+  <section class="conn" aria-live="polite">
+    <div class="conn-row">
+      <span class="dot" id="dot"></span>
+      <span id="connText">Keyboard belum tersambung</span>
+      <button class="btn" id="connectBtn">Sambungkan (kabel)</button>
+      <button class="btn ghost" id="btBtn">Sambungkan (Bluetooth)</button>
+    </div>
+    <p id="connHelp">Colokkan keyboard ke HP dengan kabel USB + adaptor OTG, nyalakan keyboard, lalu tekan tombol di atas. Tanpa keyboard, kamu tetap bisa berlatih dengan menyentuh piano di layar.</p>
+    <p id="lastNote" class="muted">Tombol terakhir ditekan: <b>—</b></p>
+  </section>
+
+  <section>
+    <h2 style="margin-bottom:10px">Pilih pelajaran</h2>
+    <div class="songs" id="songs"></div>
+  </section>
+
+  <section class="stage">
+    <div class="stage-top">
+      <h2 id="songTitle">—</h2>
+      <span id="progressText">0 / 0</span>
+    </div>
+    <div class="bar"><i id="barFill"></i></div>
+    <div class="now">
+      <div class="bubble" id="bubble"><div><b id="bigSol">Do</b><br><span id="bigLet">C</span></div></div>
+      <div class="now-txt">
+        <p id="hint">Tekan Do</p>
+        <p id="subhint">Pakai jari 1 (jempol) tangan kanan</p>
+      </div>
+    </div>
+    <div>
+      <p class="legend" style="margin-bottom:6px">Nada selanjutnya</p>
+      <div class="next" id="next"></div>
+    </div>
+    <div class="kb-wrap"><div class="kb" id="kb" aria-label="Piano di layar"></div></div>
+    <p class="legend">Titik biru = <b>Do tengah</b>. Di keyboard Rixton 61 tuts, Do tengah adalah tombol C ketiga dari kiri (tombol putih tepat di kiri dua tombol hitam).</p>
+    <div class="controls">
+      <button class="btn" id="demoBtn">▶ Dengar contoh</button>
+      <button class="btn ghost" id="restartBtn">Ulang dari awal</button>
+      <label class="toggle"><input type="checkbox" id="anyOct" checked> Boleh oktaf mana saja</label>
+    </div>
+  </section>
+
+  <details>
+    <summary>Panduan untuk orang tua</summary>
+    <ol>
+      <li><b>Cara paling stabil: kabel.</b> Pakai kabel USB bawaan keyboard dan adaptor OTG (USB-C ke USB) ke HP Android. Buka halaman ini di Chrome, tekan "Sambungkan keyboard", lalu izinkan akses perangkat MIDI.</li>
+      <li><b>Bluetooth:</b> Chrome di Android hanya melihat keyboard Bluetooth MIDI yang sudah tersambung lewat aplikasi lain (misalnya aplikasi "MIDI BLE Connect"). Sambungkan dulu di sana, lalu kembali ke sini. Jangan sambungkan lewat menu Bluetooth biasa, karena itu hanya fungsi speaker.</li>
+      <li><b>Tes cepat:</b> tekan tombol apa saja di keyboard. Kalau "Tombol terakhir ditekan" berubah, berarti sudah tersambung.</li>
+      <li><b>Urutan belajar:</b> mulai dari pelajaran 1, ulangi sampai dapat 3 bintang, baru pindah ke pelajaran berikutnya. Cukup 10–15 menit sehari.</li>
+      <li><b>Belum tahu lagunya?</b> Tekan "Dengar contoh" dulu. Tombol biru di layar menunjukkan nada yang sedang dimainkan.</li>
+      <li><b>Posisi tangan:</b> letakkan jempol kanan (jari 1) di Do tengah, lalu jari 2, 3, 4, 5 di Re, Mi, Fa, Sol. Nomor jari muncul di atas tombol kuning.</li>
+    </ol>
+  </details>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="result" role="dialog" aria-modal="true" aria-labelledby="resTitle">
+    <h2 id="resTitle">Hebat!</h2>
+    <div class="big-stars" id="resStars"></div>
+    <p id="resText"></p>
+    <button class="btn" id="againBtn">Main lagi</button>
+    <button class="btn ghost" id="nextBtn">Pelajaran berikutnya</button>
+  </div>
+</div>
+
+<script>
+const PC=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const SOL={C:'Do',D:'Re',E:'Mi',F:'Fa',G:'Sol',A:'La',B:'Si'};
+const FING={C:1,D:2,E:3,F:4,G:5};
+const LOW=55, HIGH=72; // G3 .. C5 di layar
+function toMidi(n){const m=n.match(/^([A-G]#?)(\d)$/);return (parseInt(m[2])+1)*12+PC.indexOf(m[1]);}
+function letter(m){return PC[m%12];}
+function solf(m){const l=letter(m);return l.length>1?SOL[l[0]]+'#':SOL[l];}
+function parse(s){return s.trim().split(/\s+/).map(t=>{const [n,d]=t.split(':');return {m:toMidi(n),d:d?parseFloat(d):1};});}
+
+const SONGS=[
+ {id:'warm',lvl:'Pelajaran 1',name:'Do Re Mi',desc:'Tiga jari pertama',notes:parse('C4 D4 E4 D4 C4:2 E4 D4 C4:2 C4 D4 E4:2 E4 D4 C4:2')},
+ {id:'five',lvl:'Pelajaran 2',name:'Do sampai Sol',desc:'Lima jari',notes:parse('C4 D4 E4 F4 G4:2 G4 F4 E4 D4 C4:2 C4 E4 G4:2 G4 E4 C4:2')},
+ {id:'mary',lvl:'Pelajaran 3',name:'Mary Had a Little Lamb',desc:'Lagu pertama',notes:parse('E4 D4 C4 D4 E4 E4 E4:2 D4 D4 D4:2 E4 G4 G4:2 E4 D4 C4 D4 E4 E4 E4 E4 D4 D4 E4 D4 C4:4')},
+ {id:'ode',lvl:'Pelajaran 4',name:'Ode to Joy',desc:'Beethoven',notes:parse('E4 E4 F4 G4 G4 F4 E4 D4 C4 C4 D4 E4 E4:1.5 D4:0.5 D4:2 E4 E4 F4 G4 G4 F4 E4 D4 C4 C4 D4 E4 D4:1.5 C4:0.5 C4:2')},
+ {id:'twinkle',lvl:'Pelajaran 5',name:'Twinkle Twinkle Little Star',desc:'Bintang kecil',notes:parse('C4 C4 G4 G4 A4 A4 G4:2 F4 F4 E4 E4 D4 D4 C4:2 G4 G4 F4 F4 E4 E4 D4:2 G4 G4 F4 F4 E4 E4 D4:2 C4 C4 G4 G4 A4 A4 G4:2 F4 F4 E4 E4 D4 D4 C4:2')},
+ {id:'jacques',lvl:'Pelajaran 6',name:'Frère Jacques',desc:'Ada nada rendah',notes:parse('C4 D4 E4 C4 C4 D4 E4 C4 E4 F4 G4:2 E4 F4 G4:2 G4:0.5 A4:0.5 G4:0.5 F4:0.5 E4 C4 G4:0.5 A4:0.5 G4:0.5 F4:0.5 E4 C4 C4 G3 C4:2 C4 G3 C4:2')},
+];
+
+let song=SONGS[0], idx=0, mistakes=0, demoToken=0, audio=null, access=null;
+const $=id=>document.getElementById(id);
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let best=store.get('pk-best')||{};
+
+/* ---------- Suara (untuk sentuhan layar & contoh) ---------- */
+function ac(){if(!audio){try{audio=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(audio&&audio.state==='suspended')audio.resume();return audio;}
+function tone(m,dur=0.6){const a=ac();if(!a)return;const t=a.currentTime,f=440*Math.pow(2,(m-69)/12);
+  const g=a.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.28,t+0.01);g.gain.exponentialRampToValueAtTime(0.001,t+dur);g.connect(a.destination);
+  [[1,'triangle',1],[2,'sine',0.25]].forEach(([mul,type,vol])=>{const o=a.createOscillator(),og=a.createGain();o.type=type;o.frequency.value=f*mul;og.gain.value=vol;o.connect(og);og.connect(g);o.start(t);o.stop(t+dur+0.05);});}
+
+/* ---------- Keyboard di layar ---------- */
+const keyEl={};
+function buildKeyboard(){
+  const kb=$('kb');kb.innerHTML='';
+  const whites=[];for(let m=LOW;m<=HIGH;m++)if(!letter(m).includes('#'))whites.push(m);
+  const W=100/whites.length;
+  whites.forEach((m,i)=>{
+    const d=document.createElement('div');d.className='w'+(m===60?' mid':'');d.dataset.m=m;
+    d.innerHTML='<span class="sol">'+solf(m)+'</span><span class="let">'+letter(m)+(m===60?'4':'')+'</span>';
+    kb.appendChild(d);keyEl[m]=d;
+    if(m+1<=HIGH&&letter(m+1).includes('#')){const b=document.createElement('div');b.className='b';b.dataset.m=m+1;
+      b.style.left=((i+1)*W-W*0.3)+'%';b.style.width=(W*0.6)+'%';kb.appendChild(b);keyEl[m+1]=b;}
+  });
+  kb.addEventListener('pointerdown',e=>{const k=e.target.closest('[data-m]');if(!k)return;e.preventDefault();const m=+k.dataset.m;tone(m);press(m);});
+}
+function onScreen(m){if(m>=LOW&&m<=HIGH)return m;const pc=((m%12)+12)%12;return 60+pc<=HIGH?60+pc:48+pc;}
+function flash(m,cls,ms=260){const el=keyEl[onScreen(m)];if(!el)return;el.classList.add(cls);setTimeout(()=>el.classList.remove(cls),ms);}
+
+/* ---------- Pelajaran ---------- */
+function starsFor(mis){return mis<=1?3:mis<=4?2:1;}
+function starHtml(n){return '★★★'.split('').map((s,i)=>i<n?s:'<span class="off">★</span>').join('');}
+function renderSongs(){
+  $('songs').innerHTML='';
+  SONGS.forEach(s=>{const b=document.createElement('button');b.className='song';b.setAttribute('aria-pressed',s===song);
+    b.innerHTML='<span class="lvl">'+s.lvl+'</span><span class="nm">'+s.name+'</span><span class="st">'+starHtml(best[s.id]||0)+'</span>';
+    b.onclick=()=>{song=s;restart();renderSongs();};$('songs').appendChild(b);});
+}
+function restart(){stopDemo();idx=0;mistakes=0;$('overlay').hidden=true;render();}
+function render(){
+  $('songTitle').textContent=song.name;
+  $('progressText').textContent=Math.min(idx,song.notes.length)+' / '+song.notes.length+' nada';
+  $('barFill').style.width=(idx/song.notes.length*100)+'%';
+  document.querySelectorAll('.target').forEach(e=>e.classList.remove('target'));
+  document.querySelectorAll('.fing').forEach(e=>e.remove());
+  if(idx>=song.notes.length)return;
+  const m=song.notes[idx].m, l=letter(m), f=FING[l];
+  $('bigSol').textContent=solf(m);$('bigLet').textContent=l;
+  $('hint').textContent='Tekan '+solf(m)+(m<60?' (rendah)':'');
+  $('subhint').textContent=f&&m>=60&&m<=67?('Pakai jari '+f+(f===1?' (jempol)':'')+' tangan kanan'):m<60?'Nada di sebelah kiri Do tengah. Geser tangan sedikit ke kiri.':'Geser jari 5 (kelingking) satu tombol ke kanan';
+  const el=keyEl[m];if(el){el.classList.add('target');if(f&&m>=60&&m<=67){const s=document.createElement('span');s.className='fing';s.textContent=f;el.appendChild(s);}}
+  $('next').innerHTML=song.notes.slice(idx,idx+8).map(n=>'<span>'+solf(n.m)+'</span>').join('');
+}
+function press(m){
+  $('lastNote').innerHTML='Tombol terakhir ditekan: <b>'+solf(m)+'</b> ('+letter(m)+Math.floor(m/12-1)+')';
+  if(demoToken){return;}
+  if(idx>=song.notes.length){flash(m,'down');return;}
+  const t=song.notes[idx].m, ok=$('anyOct').checked?(m%12===t%12):(m===t);
+  const bub=$('bubble');bub.classList.remove('good','bad');void bub.offsetWidth;
+  if(ok){flash(m,'down');bub.classList.add('good');idx++;render();if(idx>=song.notes.length)setTimeout(finish,450);}
+  else{mistakes++;flash(m,'wrong',400);bub.classList.add('bad');}
+}
+function finish(){
+  const s=starsFor(mistakes);if(!best[song.id]||s>best[song.id]){best[song.id]=s;store.set('pk-best',best);}renderSongs();
+  $('resTitle').textContent=s===3?'Sempurna!':s===2?'Bagus sekali!':'Selesai!';
+  $('resStars').innerHTML=starHtml(s);
+  $('resText').textContent=mistakes===0?'Tidak ada nada yang salah.':('Salah '+mistakes+' kali. '+(s<3?'Coba lagi untuk 3 bintang!':'Hebat!'));
+  const i=SONGS.indexOf(song);$('nextBtn').hidden=i===SONGS.length-1;
+  $('overlay').hidden=false;$('againBtn').focus();
+}
+
+/* ---------- Dengar contoh ---------- */
+function stopDemo(){demoToken=0;document.querySelectorAll('.demo').forEach(e=>e.classList.remove('demo'));$('demoBtn').textContent='▶ Dengar contoh';}
+async function playDemo(){
+  if(demoToken){stopDemo();render();return;}
+  const my=Date.now();demoToken=my;$('demoBtn').textContent='■ Berhenti';ac();
+  document.querySelectorAll('.target').forEach(e=>e.classList.remove('target'));
+  const beat=0.5;
+  for(const n of song.notes){
+    if(demoToken!==my)return;
+    const el=keyEl[n.m];tone(n.m,Math.max(0.35,n.d*beat));if(el)el.classList.add('demo');
+    await new Promise(r=>setTimeout(r,n.d*beat*1000*0.85));if(el)el.classList.remove('demo');
+    await new Promise(r=>setTimeout(r,n.d*beat*1000*0.15));
+  }
+  if(demoToken===my){stopDemo();render();}
+}
+
+/* ---------- MIDI ---------- */
+function setConn(state,text,help){$('dot').className='dot '+state;$('connText').textContent=text;if(help!==undefined)$('connHelp').textContent=help;}
+function onMidi(e){const [st,n,v]=e.data;const cmd=st&0xf0;if(cmd===0x90&&v>0)press(n);}
+function bindInputs(){
+  const ins=[...access.inputs.values()];
+  ins.forEach(i=>i.onmidimessage=onMidi);
+  if(ins.length){setConn('on','Tersambung: '+ins.map(i=>i.name||'Keyboard').join(', '),'Tekan tombol apa saja di keyboard untuk mengetes. Nama nadanya akan muncul di bawah.');$('connectBtn').textContent='Cek ulang';}
+  else setConn('warn','Izin sudah diberikan, tapi keyboard belum terdeteksi','Pastikan keyboard menyala dan kabel OTG terpasang. Coba cabut lalu colok lagi kabelnya, aplikasi akan mendeteksi otomatis.');
+}
+async function connect(){
+  ac();
+  if(!navigator.requestMIDIAccess){setConn('err','Browser ini tidak mendukung MIDI','Buka halaman ini di Google Chrome pada HP Android. Sementara itu, kamu bisa berlatih dengan menyentuh piano di layar.');return;}
+  setConn('warn','Menunggu izin…','Kalau muncul pertanyaan izin, pilih Izinkan.');
+  const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),6000));
+  try{access=await Promise.race([navigator.requestMIDIAccess(),timeout]);access.onstatechange=bindInputs;bindInputs();}
+  catch(err){
+    if(err&&err.message==='timeout'){setConn('err','Tidak ada jawaban dari browser','Halaman ini sedang dibuka di tempat yang memblokir akses ke keyboard (misalnya di dalam claude.ai). Buka aplikasi ini dari alamat webnya sendiri di Chrome.');return;}setConn('err','Akses MIDI ditolak atau diblokir','Kalau kamu menekan "Tolak", izinkan lagi lewat ikon gembok di bilah alamat Chrome. Kalau halaman dibuka di dalam aplikasi Claude, akses MIDI bisa terblokir: buka halaman ini langsung di Chrome. Piano di layar tetap bisa dipakai.');}
+}
+
+/* ---------- Bluetooth MIDI langsung (tanpa aplikasi tambahan) ---------- */
+const BLE_SVC='03b80e5a-ede8-4b33-a751-6ce34ec4c700', BLE_CHR='7772e5db-3868-4112-a1a9-f2669d106bf3';
+function parseBle(b){let i=1,status=0;while(i<b.length){
+  if(b[i]&0x80){i++; if(i<b.length&&(b[i]&0x80)){status=b[i];i++;}}
+  if(i+1>=b.length)break;
+  const cmd=status&0xf0;
+  if(cmd===0x90||cmd===0x80){const n=b[i],v=b[i+1];i+=2;if(cmd===0x90&&v>0)press(n);}
+  else if(cmd===0xC0||cmd===0xD0){i+=1;} else {i+=2;}
+}}
+async function connectBt(){
+  ac();
+  if(!navigator.bluetooth){setConn('err','Bluetooth tidak tersedia di sini','Buka aplikasi ini di Google Chrome, nyalakan Bluetooth dan Lokasi di HP, lalu coba lagi. Atau pakai kabel.');return;}
+  try{
+    setConn('warn','Mencari keyboard…','Pilih nama keyboard di daftar yang muncul.');
+    const dev=await navigator.bluetooth.requestDevice({filters:[{services:[BLE_SVC]}]});
+    const srv=await dev.gatt.connect();const ch=await (await srv.getPrimaryService(BLE_SVC)).getCharacteristic(BLE_CHR);
+    await ch.startNotifications();ch.addEventListener('characteristicvaluechanged',e=>parseBle(new Uint8Array(e.target.value.buffer)));
+    dev.addEventListener('gattserverdisconnected',()=>setConn('err','Bluetooth terputus','Tekan "Sambungkan (Bluetooth)" lagi.'));
+    setConn('on','Tersambung lewat Bluetooth: '+(dev.name||'Keyboard'),'Tekan tombol apa saja di keyboard untuk mengetes.');
+  }catch(err){
+    if(err&&err.name==='NotFoundError')setConn('warn','Keyboard tidak dipilih','Pastikan keyboard menyala, lalu coba lagi dan pilih namanya di daftar.');
+    else setConn('err','Bluetooth diblokir di halaman ini','Buka aplikasi ini dari alamat webnya sendiri di Chrome, bukan di dalam claude.ai.');
+  }
+}
+$('btBtn').onclick=connectBt;
+$('connectBtn').onclick=connect;
+$('demoBtn').onclick=playDemo;
+$('restartBtn').onclick=restart;
+$('againBtn').onclick=restart;
+$('nextBtn').onclick=()=>{const i=SONGS.indexOf(song);song=SONGS[Math.min(i+1,SONGS.length-1)];renderSongs();restart();};
+$('anyOct').onchange=()=>$('anyOct').blur();
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('overlay').hidden)$('overlay').hidden=true;});
+
+buildKeyboard();renderSongs();render();
+</script>
+
+</body>
+</html>
