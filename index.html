@@ -113,7 +113,10 @@ header{display:flex;flex-direction:column;gap:6px}
 
 .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .toggle{display:flex;align-items:center;gap:8px;font-size:14px}
-.toggle input{width:20px;height:20px;accent-color:var(--accent)}
+.toggle input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.instr{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--paper);color:var(--ink);border-radius:99px;padding:7px 12px;font-weight:700;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 
 details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
 summary{font-family:var(--display);font-weight:800;font-size:17px;cursor:pointer}
@@ -143,6 +146,10 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
     </div>
     <p id="connHelp">Colokkan keyboard ke HP dengan kabel USB + adaptor OTG, nyalakan keyboard, lalu tekan tombol di atas. Tanpa keyboard, kamu tetap bisa berlatih dengan menyentuh piano di layar.</p>
     <p id="lastNote" class="muted">Tombol terakhir ditekan: <b>—</b></p>
+    <p style="font-weight:700;margin-top:4px">Pilih suara alat musik</p>
+    <div class="instr" id="instr"></div>
+    <label class="toggle"><input type="checkbox" id="pianoOn" checked> <span><b>Bunyikan suara pilihan dari HP</b> (kecilkan volume keyboard Rixton sampai paling pelan)</span></label>
+    <p id="pianoStatus" class="muted" style="font-size:14px">Memuat suara…</p>
   </section>
 
   <section>
@@ -210,6 +217,7 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
       <li><b>Musik pengiring</b> memainkan akord lembut dari speaker HP setiap kali anak menekan nada yang benar, dan ikut berbunyi saat "Dengar contoh".</li>
       <li><b>Layar tetap menyala</b> selama aplikasi terbuka. Kalau tulisan di atas belum hijau, ketuk layar sekali.</li>
       <li><b>Tambah lagu:</b> ketuk kartu "+ Tambah lagu", tempel not angka dari internet atau buku lagu, tekan "Dengar" untuk mengecek, lalu "Simpan". Lagu tersimpan di HP ini.</li>
+      <li><b>Pilih suara:</b> ketuk salah satu alat musik (piano, gitar, biola, angklung, gamelan, dan lainnya), lalu kecilkan volume keyboard Rixton. Suara terdengar dari speaker HP, dan pedal sustain ikut berfungsi. Supaya lebih merdu, sambungkan HP ke speaker Bluetooth. Angklung, gamelan, dan kotak musik dibuat langsung oleh aplikasi, jadi tetap jalan tanpa internet. Rekaman: Salamander Grand Piano (Alexander Holm, CC-BY 3.0) dan tonejs-instruments (Nicholaus Brosowsky).</li>
       <li><b>Urutan belajar:</b> mulai dari pelajaran 1, ulangi sampai dapat 3 bintang, baru pindah. Cukup 10–15 menit sehari.</li>
     </ol>
   </details>
@@ -279,9 +287,84 @@ if(prefs.acc===false)$('accOn').checked=false;
 
 /* ---------- Suara ---------- */
 function ac(){if(!audio){try{audio=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(audio&&audio.state==='suspended')audio.resume();return audio;}
-function tone(m,dur=0.6,vol=0.28){const a=ac();if(!a)return;const t=a.currentTime,f=440*Math.pow(2,(m-69)/12);
-  const g=a.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+0.01);g.gain.exponentialRampToValueAtTime(0.001,t+dur);g.connect(a.destination);
-  [[1,'triangle',1],[2,'sine',0.25]].forEach(([mul,type,v])=>{const o=a.createOscillator(),og=a.createGain();o.type=type;o.frequency.value=f*mul;og.gain.value=v;o.connect(og);og.connect(g);o.start(t);o.stop(t+dur+0.05);});}
+/* ---------- Pilihan suara alat musik ---------- */
+const SALAMANDER='https://tonejs.github.io/audio/salamander/';
+const NB='https://nbrosowsky.github.io/tonejs-instruments/samples/';
+const NN=['C','Cs','D','Ds','E','F','Fs','G','Gs','A','As','B'];
+function synthVoice(a,dest,f,partials,env){
+  const t=a.currentTime,g=a.createGain();g.connect(dest);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(env.vol,t+env.att);
+  g.gain.exponentialRampToValueAtTime(0.0008,t+env.att+env.dec);
+  const s=partials.map(([r,v,type])=>{const o=a.createOscillator(),og=a.createGain();o.type=type||'sine';o.frequency.value=f*r;og.gain.value=v;o.connect(og);og.connect(g);o.start(t);o.stop(t+env.att+env.dec+0.1);return o;});
+  return {g,s};
+}
+const INSTR=[
+ {id:'piano',name:'Grand piano',icon:'🎹',url:SALAMANDER,lo:33,hi:99,gain:0.9},
+ {id:'gitar',name:'Gitar akustik',icon:'🎸',url:NB+'guitar-acoustic/',lo:40,hi:81,gain:1.1},
+ {id:'nilon',name:'Gitar nilon',icon:'🎸',url:NB+'guitar-nylon/',lo:40,hi:84,gain:1.1},
+ {id:'biola',name:'Biola',icon:'🎻',url:NB+'violin/',lo:55,hi:96,gain:0.9},
+ {id:'suling',name:'Seruling',icon:'🎵',url:NB+'flute/',lo:60,hi:96,gain:1},
+ {id:'harpa',name:'Harpa',icon:'🎼',url:NB+'harp/',lo:33,hi:96,gain:1},
+ {id:'xilofon',name:'Xilofon',icon:'🎶',url:NB+'xylophone/',lo:60,hi:108,gain:1},
+ {id:'organ',name:'Organ',icon:'🎹',url:NB+'organ/',lo:36,hi:96,gain:0.7},
+ {id:'saksofon',name:'Saksofon',icon:'🎷',url:NB+'saxophone/',lo:49,hi:81,gain:1},
+ {id:'terompet',name:'Terompet',icon:'🎺',url:NB+'trumpet/',lo:52,hi:84,gain:0.9},
+ {id:'angklung',name:'Angklung',icon:'🎋',play(a,m,vel,dest){
+   /* dua tabung bambu (nada + satu oktaf di atasnya) yang digoyang cepat */
+   const f=440*Math.pow(2,(m-69)/12),t=a.currentTime,g=a.createGain(),trem=a.createGain(),lfo=a.createOscillator(),depth=a.createGain();
+   g.connect(dest);trem.connect(g);trem.gain.value=0.55;lfo.type='square';lfo.frequency.value=13;depth.gain.value=0.45;lfo.connect(depth);depth.connect(trem.gain);
+   const vol=0.30*(0.3+0.7*vel);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+0.015);g.gain.exponentialRampToValueAtTime(vol*0.55,t+1.2);g.gain.exponentialRampToValueAtTime(0.0008,t+5);
+   const s=[[1,1],[2,0.55],[3.01,0.12],[4.02,0.06]].map(([r,v])=>{const o=a.createOscillator(),og=a.createGain();o.frequency.value=f*r;og.gain.value=v;o.connect(og);og.connect(trem);o.start(t);o.stop(t+5.1);return o;});
+   lfo.start(t);lfo.stop(t+5.1);s.push(lfo);return {g,s};}},
+ {id:'saron',name:'Gamelan (saron)',icon:'🔔',play(a,m,vel,dest){
+   const f=440*Math.pow(2,(m-69)/12);
+   return synthVoice(a,dest,f,[[1,1],[1.004,0.6],[2.76,0.35],[5.4,0.15],[8.93,0.05]],{vol:0.26*(0.3+0.7*vel),att:0.004,dec:2.8});}},
+ {id:'kotak',name:'Kotak musik',icon:'🎁',play(a,m,vel,dest){
+   const f=440*Math.pow(2,(m-57)/12);
+   return synthVoice(a,dest,f,[[1,1],[3,0.18],[4.2,0.08]],{vol:0.24*(0.3+0.7*vel),att:0.003,dec:1.3});}},
+];
+const BUF={};let master=null;let cur=INSTR[0];const LOADSTATE={};
+function out(){const a=ac();if(!master){master=a.createDynamicsCompressor();master.threshold.value=-12;master.ratio.value=4;master.connect(a.destination);}return master;}
+function nearestSample(m){const b=BUF[cur.id];if(!b)return null;let best=null,bd=99;for(const k in b){const d=Math.abs(k-m);if(d<bd){bd=d;best=+k;}}return best;}
+function soundStatus(){const el=$('pianoStatus'),st=LOADSTATE[cur.id];
+  if(cur.play||(st&&st.done&&st.ok))el.textContent='Suara '+cur.name+' siap.';
+  else if(st&&st.done)el.textContent='Suara '+cur.name+' tidak bisa dimuat (periksa internet). Sementara memakai suara sederhana.';
+  else el.textContent='Memuat suara '+cur.name+'… '+(st?st.ok:0)+' bagian'+(st&&st.ok?' (sudah bisa dipakai)':'');}
+async function loadInstrument(ins){
+  const a=ac();if(!a||ins.play){soundStatus();return;}
+  if(LOADSTATE[ins.id]){soundStatus();return LOADSTATE[ins.id].p;}
+  const st=LOADSTATE[ins.id]={ok:0,done:false};BUF[ins.id]={};
+  async function grab(list){let i=0;async function w(){while(i<list.length){const m=list[i++];
+      try{const r=await fetch(ins.url+NN[m%12]+(Math.floor(m/12)-1)+'.mp3');if(!r.ok)throw 0;const ab=await r.arrayBuffer();
+        BUF[ins.id][m]=await new Promise((res,rej)=>a.decodeAudioData(ab,res,rej));st.ok++;}catch(e){}
+      if(cur===ins)soundStatus();}}
+    await Promise.all([w(),w(),w(),w()]);}
+  st.p=(async()=>{
+    const all=[];for(let m=ins.lo;m<=ins.hi;m++)all.push(m);
+    const first=all.filter(m=>m%3===0).sort((x,y)=>Math.abs(x-64)-Math.abs(y-64));
+    await grab(first);
+    if(st.ok<3)await grab(all.filter(m=>m%3!==0).sort((x,y)=>Math.abs(x-64)-Math.abs(y-64)));
+    st.done=true;if(cur===ins)soundStatus();})();
+  return st.p;
+}
+function renderInstr(){const box=$('instr');box.innerHTML='';
+  INSTR.forEach(ins=>{const b=document.createElement('button');b.className='chip';b.setAttribute('aria-pressed',ins===cur);b.textContent=ins.icon+' '+ins.name;
+    b.onclick=async()=>{cur=ins;prefs.instr=ins.id;store.set('pk-prefs',prefs);renderInstr();soundStatus();
+      await loadInstrument(ins);if(cur===ins){[60,64,67,72].forEach((m,i)=>setTimeout(()=>tone(m,0.9,0.24),i*170));}};
+    box.appendChild(b);});}
+/* nada: kembalikan pegangan supaya bisa dilepas (note off) */
+function noteOn(m,vel=0.8){
+  const a=ac();if(!a)return null;
+  if(cur.play)return cur.play(a,m,vel,out());
+  const t=a.currentTime,k=nearestSample(m),g=a.createGain();g.connect(out());
+  if(k!==null){const s=a.createBufferSource();s.buffer=BUF[cur.id][k];s.playbackRate.value=Math.pow(2,(m-k)/12);
+    g.gain.value=(0.12+0.88*vel*vel)*cur.gain;s.connect(g);s.start(t);return {g,s:[s]};}
+  const f=440*Math.pow(2,(m-69)/12),vol=0.32*vel;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+0.01);g.gain.exponentialRampToValueAtTime(0.001,t+2);
+  const os=[[1,'triangle',1],[2,'sine',0.25]].map(([mul,type,v])=>{const o=a.createOscillator(),og=a.createGain();o.type=type;o.frequency.value=f*mul;og.gain.value=v;o.connect(og);og.connect(g);o.start(t);o.stop(t+2.1);return o;});
+  return {g,s:os};
+}
+function noteOff(h,rel=0.3){if(!h)return;const a=ac(),t=a.currentTime;try{h.g.gain.cancelScheduledValues(t);h.g.gain.setValueAtTime(h.g.gain.value,t);h.g.gain.setTargetAtTime(0,t,rel/3);h.s.forEach(s=>{try{s.stop(t+rel*2)}catch(e){}});}catch(e){}}
+function tone(m,dur=0.6,vol=0.28){const h=noteOn(m,Math.min(1,vol/0.28*0.75));setTimeout(()=>noteOff(h,0.4),dur*1000);}
 /* Musik pengiring: pilih akord I, IV atau V yang cocok dengan nada melodi */
 function chordFor(m,tonic){const deg=((m-tonic)%12+12)%12;
   if([0,4,7].includes(deg))return [0,4,7];if([5,9].includes(deg))return [5,9,12];if([2,11].includes(deg))return [7,11,14];return null;}
@@ -424,7 +507,19 @@ $('delBtn').onclick=()=>{
 
 /* ---------- MIDI kabel ---------- */
 function setConn(state,text,help){$('dot').className='dot '+state;$('connText').textContent=text;if(help!==undefined)$('connHelp').textContent=help;}
-function onMidi(e){const [st,n,v]=e.data;if((st&0xf0)===0x90&&v>0)press(n);}
+/* Pesan dari keyboard: nada ditekan, dilepas, dan pedal sustain */
+const held={};const sustained=new Set();let sustain=false;
+function midiMsg(cmd,n,v){
+  if(cmd===0x90&&v>0){
+    if($('pianoOn').checked){if(held[n])noteOff(held[n],0.05);sustained.delete(n);held[n]=noteOn(n,v/127);}
+    press(n);
+  }else if(cmd===0x80||(cmd===0x90&&v===0)){
+    if(sustain){sustained.add(n);}else{noteOff(held[n]);delete held[n];}
+  }else if(cmd===0xB0&&n===64){
+    sustain=v>=64;if(!sustain){sustained.forEach(x=>{noteOff(held[x]);delete held[x];});sustained.clear();}
+  }
+}
+function onMidi(e){const [st,n,v]=e.data;midiMsg(st&0xf0,n,v);}
 function bindInputs(){
   const ins=[...access.inputs.values()];
   ins.forEach(i=>i.onmidimessage=onMidi);
@@ -448,7 +543,7 @@ function parseBle(b){let i=1,status=0;while(i<b.length){
   if(b[i]&0x80){i++; if(i<b.length&&(b[i]&0x80)){status=b[i];i++;}}
   if(i+1>=b.length)break;
   const cmd=status&0xf0;
-  if(cmd===0x90||cmd===0x80){const n=b[i],v=b[i+1];i+=2;if(cmd===0x90&&v>0)press(n);}
+  if(cmd===0x90||cmd===0x80||cmd===0xB0){const n=b[i],v=b[i+1];i+=2;midiMsg(cmd,n,v);}
   else if(cmd===0xC0||cmd===0xD0){i+=1;} else {i+=2;}
 }}
 async function connectBt(){
@@ -475,6 +570,10 @@ $('againBtn').onclick=restart;
 $('nextBtn').onclick=()=>{const list=allSongs(),i=list.indexOf(song);selectSong(list[Math.min(i+1,list.length-1)]);};
 $('accOn').onchange=()=>{prefs.acc=$('accOn').checked;store.set('pk-prefs',prefs);};
 $('anyOct').onchange=()=>$('anyOct').blur();
+if(prefs.piano===false)$('pianoOn').checked=false;
+$('pianoOn').onchange=()=>{prefs.piano=$('pianoOn').checked;store.set('pk-prefs',prefs);if(!prefs.piano){Object.keys(held).forEach(k=>{noteOff(held[k]);delete held[k];});}};
+document.addEventListener('pointerdown',()=>ac(),{passive:true});
+cur=INSTR.find(i=>i.id===prefs.instr)||INSTR[0];renderInstr();loadInstrument(cur);
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('overlay').hidden)$('overlay').hidden=true;});
 
 buildKeyboard();renderSongs();restart();keepAwake();
