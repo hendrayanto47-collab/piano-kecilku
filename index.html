@@ -174,6 +174,15 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .tabbtn[aria-current="page"]{color:var(--accent);background:var(--paper)}
 #songGroups .group-label:first-child{margin-top:0}
 /* Mode iringan */
+.parts{display:flex;flex-direction:column;gap:6px}
+.part{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--paper)}
+.part.mine{border-color:var(--sun);box-shadow:0 0 0 2px var(--sun) inset}
+.part .pn{flex:1;min-width:0}
+.part .pn b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.part .pn span{font-size:13px;color:var(--muted)}
+.part input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.part .mineBtn{flex:none;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:5px 10px;font-weight:700;font-size:13px}
+.part.mine .mineBtn{background:var(--sun);color:var(--sun-ink);border-color:var(--sun)}
 .ytbox{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;background:#000;border-radius:12px;overflow:hidden}
 .ytbox iframe,.ytbox>div{position:absolute;inset:0;width:100%;height:100%;border:0}
 .chordnow{display:flex;align-items:center;gap:14px}
@@ -280,7 +289,7 @@ details.card[open]{gap:10px}
 
   <section class="card">
     <h3>1. Musik</h3>
-    <div class="modes" role="group" aria-label="Sumber musik"><button class="seg" id="srcFile" aria-pressed="true">📁 File dari HP</button><button class="seg" id="srcYt" aria-pressed="false">▶️ YouTube</button></div>
+    <div class="modes" role="group" aria-label="Sumber musik"><button class="seg" id="srcFile" aria-pressed="true">📁 File dari HP</button><button class="seg" id="srcYt" aria-pressed="false">▶️ YouTube</button><button class="seg" id="srcMidi" aria-pressed="false">🎼 MIDI</button></div>
     <div id="filePane" class="controls">
       <label class="btn" for="audioFile" style="display:inline-block">Pilih file musik</label>
       <input type="file" id="audioFile" accept="audio/*,video/mp4" hidden>
@@ -291,6 +300,17 @@ details.card[open]{gap:10px}
     <div id="ytPane" hidden class="field">
       <label for="ytUrl">Link YouTube</label>
       <div class="controls" style="flex-wrap:nowrap"><input id="ytUrl" type="url" inputmode="url" placeholder="https://youtu.be/..." style="flex:1;min-width:0"><button class="btn" id="ytLoad">Muat</button></div>
+    </div>
+    <div id="midiPane" hidden style="display:flex;flex-direction:column;gap:10px">
+      <div class="controls">
+        <label class="btn" for="midiFile" style="display:inline-block">Pilih file MIDI</label>
+        <input type="file" id="midiFile" accept=".mid,.midi,.kar,audio/midi,audio/x-midi" hidden>
+        <button class="btn ghost" id="midiDemo">Coba contoh: Jingle Bells</button>
+      </div>
+      <span class="muted" id="midiName" style="font-size:14px">File MIDI (.mid) berisi semua alat musik secara terpisah. Matikan bagian yang ingin Anda mainkan sendiri.</span>
+      <div id="midiParts" class="parts"></div>
+      <div class="controls" id="midiActions" hidden><button class="btn ghost" id="midiToSong">➕ Jadikan lagu latihan anak</button></div>
+      <p class="legend" id="midiMsg" hidden></p>
     </div>
     <div class="ytbox" id="ytBox" hidden><div id="ytPlayer"></div></div>
     <audio id="audioEl" preload="auto" hidden></audio>
@@ -396,6 +416,7 @@ details.card[open]{gap:10px}
       <li><b>Tambah lagu:</b> ketuk kartu "+ Tambah lagu", tempel not angka dari internet atau buku lagu, tekan "Dengar" untuk mengecek, lalu "Simpan". Lagu tersimpan di HP ini.</li>
       <li><b>Pilih suara:</b> ketuk salah satu alat musik (piano, gitar, biola, angklung, gamelan, dan lainnya), lalu kecilkan volume keyboard Rixton. Suara terdengar dari speaker HP, dan pedal sustain ikut berfungsi. Supaya lebih merdu, sambungkan HP ke speaker Bluetooth. Angklung, gamelan, dan kotak musik dibuat langsung oleh aplikasi, jadi tetap jalan tanpa internet. Rekaman: Salamander Grand Piano (Alexander Holm, CC-BY 3.0) dan tonejs-instruments (Nicholaus Brosowsky).</li>
       <li><b>Mode game:</b> ketuk "Contohkan dulu" supaya anak melihat dan mendengar cara memainkan lagunya, lalu "Mulai game". Drum memberi ketukan, dan melodi panduan berbunyi pelan tepat saat nada harus ditekan. Balok warna turun ke keyboard. Setiap nada punya warna (Do merah, Re oranye, Mi kuning, Fa hijau, Sol biru, La nila, Si ungu), dan warna yang sama ada di tombol piano layar. Mulai dengan kecepatan Pelan.</li>
+      <li><b>MIDI:</b> di menu Iringan pilih 🎼 MIDI, lalu pilih file .mid. Setiap alat musik tampil terpisah dan bisa dimatikan. Tandai "Saya mainkan" pada bagian yang ingin Anda mainkan sendiri: bagian itu tidak dibunyikan dan nadanya menyala di piano. Tombol "Jadikan lagu latihan anak" memindahkan bagian itu ke menu Lagu untuk Mode belajar dan Mode game.</li>
       <li><b>Tebak chord otomatis:</b> setelah memilih file musik dari HP, ketuk "Tebak chord otomatis". Aplikasi mendengarkan lagunya lalu menebak chord dan waktunya, dan chord ikut berganti sendiri saat lagu diputar. Hasilnya tidak selalu tepat, jadi dengarkan dan perbaiki bila perlu. Untuk YouTube tidak bisa, karena YouTube tidak mengizinkan suaranya dianalisis.</li>
       <li><b>Iringan:</b> buka menu 🎤 Iringan, pilih file musik dari HP atau tempel link YouTube, lalu tempel chord lagunya. Chord yang harus ditekan menyala kuning (tangan kanan) dan hijau (nada bas tangan kiri). Lagu bisa diperlambat dan bagian tertentu bisa diulang.</li>
       <li><b>Urutan belajar:</b> mulai dari pelajaran 1, ulangi sampai dapat 3 bintang, baru pindah. Cukup 10–15 menit sehari.</li>
@@ -469,9 +490,9 @@ BUILTIN.forEach(s=>{s.tonic=60;s.meter=s.meter||4;s.pickup=s.pickup||0;});
 const $=id=>document.getElementById(id);
 const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let best=store.get('pk-best')||{};
-let custom=(store.get('pk-custom')||[]).map(c=>({...c,group:'Lagu saya',lvl:'Lagu saya',custom:true,meter:4,pickup:0,notes:parseAngka(c.src,c.tonic)})).filter(c=>c.notes.length);
+let custom=(store.get('pk-custom')||[]).map(c=>({...c,group:'Lagu saya',lvl:'Lagu saya',custom:true,meter:c.meter||4,pickup:0,notes:c.raw?c.raw.map(x=>({m:x[0],d:x[1]})):parseAngka(c.src,c.tonic)})).filter(c=>c.notes.length);
 const allSongs=()=>BUILTIN.concat(custom);
-function saveCustom(){store.set('pk-custom',custom.map(c=>({id:c.id,name:c.name,tonic:c.tonic,src:c.src})));}
+function saveCustom(){store.set('pk-custom',custom.map(c=>c.raw?{id:c.id,name:c.name,tonic:c.tonic,meter:c.meter,raw:c.raw}:{id:c.id,name:c.name,tonic:c.tonic,src:c.src}));}
 
 let song=BUILTIN[0], idx=0, mistakes=0, demoToken=0, audio=null, access=null;
 const prefs=store.get('pk-prefs')||{};
@@ -545,16 +566,20 @@ function renderInstr(){const box=$('instr');box.innerHTML='';
       await loadInstrument(ins);if(cur===ins){[60,64,67,72].forEach((m,i)=>setTimeout(()=>tone(m,0.9,0.24),i*170));}};
     box.appendChild(b);});}
 /* nada: kembalikan pegangan supaya bisa dilepas (note off) */
-function noteOn(m,vel=0.8,dest){
+function nearestIn(ins,m){const b=BUF[ins.id];if(!b)return null;let best=null,bd=99;for(const k in b){const d=Math.abs(k-m);if(d<bd){bd=d;best=+k;}}return best;}
+function noteOnWith(ins,m,vel=0.8,dest,at){
   const a=ac();if(!a)return null;dest=dest||out();
-  if(cur.play)return cur.play(a,m,vel,dest);
-  const t=a.currentTime,k=nearestSample(m),g=a.createGain();g.connect(dest);
-  if(k!==null){const s=a.createBufferSource();s.buffer=BUF[cur.id][k];s.playbackRate.value=Math.pow(2,(m-k)/12);
-    g.gain.value=(0.12+0.88*vel*vel)*cur.gain;s.connect(g);s.start(t);return {g,s:[s]};}
-  const f=440*Math.pow(2,(m-69)/12),vol=0.32*vel;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+0.01);g.gain.exponentialRampToValueAtTime(0.001,t+2);
-  const os=[[1,'triangle',1],[2,'sine',0.25]].map(([mul,type,v])=>{const o=a.createOscillator(),og=a.createGain();o.type=type;o.frequency.value=f*mul;og.gain.value=v;o.connect(og);og.connect(g);o.start(t);o.stop(t+2.1);return o;});
+  if(ins.play&&!at)return ins.play(a,m,vel,dest);
+  const t=at||a.currentTime,k=ins.play?null:nearestIn(ins,m),g=a.createGain();g.connect(dest);
+  if(k!==null){const s=a.createBufferSource();s.buffer=BUF[ins.id][k];s.playbackRate.value=Math.pow(2,(m-k)/12);
+    g.gain.value=(0.12+0.88*vel*vel)*ins.gain;s.connect(g);s.start(t);return {g,s:[s]};}
+  const f=440*Math.pow(2,(m-69)/12),vol=0.32*vel,sh=ins.synth||[[1,'triangle',1],[2,'sine',0.25]],dec=ins.dec||2;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol*(ins.gain||1),t+0.01);g.gain.exponentialRampToValueAtTime(0.001,t+dec);
+  const os=sh.map(([mul,type,v])=>{const o=a.createOscillator(),og=a.createGain();o.type=type;o.frequency.value=f*mul;og.gain.value=v;o.connect(og);og.connect(g);o.start(t);o.stop(t+dec+0.1);return o;});
   return {g,s:os};
 }
+function noteOn(m,vel=0.8,dest){return noteOnWith(cur,m,vel,dest);}
+function noteOffAt(h,at,rel=0.25){if(!h)return;try{h.g.gain.setTargetAtTime(0,at,rel/3);h.s.forEach(s=>{try{s.stop(at+rel*2)}catch(e){}});}catch(e){}}
 function noteOff(h,rel=0.3){if(!h)return;const a=ac(),t=a.currentTime;try{h.g.gain.cancelScheduledValues(t);h.g.gain.setValueAtTime(h.g.gain.value,t);h.g.gain.setTargetAtTime(0,t,rel/3);h.s.forEach(s=>{try{s.stop(t+rel*2)}catch(e){}});}catch(e){}}
 /* jalur musik (pengiring, drum, melodi panduan) dengan pengatur volume sendiri */
 let musicBus=null;
@@ -700,7 +725,7 @@ function addFx(m,txt,c){const L=laneOf(m);if(!L||!game)return;game.fx.push({x:L.
 /* ---------- Drum sederhana untuk ketukan ---------- */
 let noiseBuf=null;
 function noise(){const a=ac();if(!noiseBuf){noiseBuf=a.createBuffer(1,a.sampleRate*0.3,a.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;}return noiseBuf;}
-function drum(kind){const a=ac();if(!a)return;const t=a.currentTime,dest=bus();
+function drum(kind,at){const a=ac();if(!a)return;const t=at||a.currentTime,dest=bus();
   function ping(f1,f2,vol,dur,type){const o=a.createOscillator(),g=a.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f1,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur*0.6);
     g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+dur);o.connect(g);g.connect(dest);o.start(t);o.stop(t+dur+0.02);}
   function hiss(type,freq,vol,dur){const n=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();n.buffer=noise();f.type=type;f.frequency.value=freq;
@@ -708,6 +733,8 @@ function drum(kind){const a=ac();if(!a)return;const t=a.currentTime,dest=bus();
   if(kind==='kick'){ping(220,70,0.9,0.22);ping(1100,500,0.25,0.03,'triangle');}
   else if(kind==='snare'){hiss('bandpass',2200,0.6,0.16);ping(330,200,0.3,0.08,'triangle');}
   else if(kind==='click'){ping(1500,null,0.5,0.06);}
+  else if(kind==='tom'){ping(200,110,0.55,0.22);}
+  else if(kind==='crash'){hiss('highpass',5000,0.22,0.9);}
   else{hiss('highpass',6000,0.32,0.06);}
 }
 function isDownbeat(k){const off=(song.meter-song.pickup%song.meter)%song.meter;return (((k+off)%song.meter)+song.meter)%song.meter===0;}
@@ -930,20 +957,20 @@ $('iDel').onclick=()=>{if(!iDelArmed){iDelArmed=true;$('iDel').textContent='Yaki
 /* pemutar: file dari HP atau YouTube */
 let src='file',yt=null,ytReady=false,ab={a:null,b:null},seeking=false;
 const audioEl=$('audioEl');
-function setSrc(x){src=x;$('srcFile').setAttribute('aria-pressed',x==='file');$('srcYt').setAttribute('aria-pressed',x==='yt');
-  $('filePane').hidden=x!=='file';$('ytPane').hidden=x!=='yt';$('ytBox').hidden=x!=='yt'||!yt;iPause();
-  $('playerCtl').hidden=!(x==='file'?audioEl.src:yt);$('playerMsg').hidden=true;}
-$('srcFile').onclick=()=>setSrc('file');$('srcYt').onclick=()=>setSrc('yt');
+function setSrc(x){iPause();src=x;$('srcFile').setAttribute('aria-pressed',x==='file');$('srcYt').setAttribute('aria-pressed',x==='yt');$('srcMidi').setAttribute('aria-pressed',x==='midi');
+  $('filePane').hidden=x!=='file';$('ytPane').hidden=x!=='yt';$('midiPane').hidden=x!=='midi';$('ytBox').hidden=x!=='yt'||!yt;
+  $('playerCtl').hidden=!(x==='file'?audioEl.src:x==='yt'?yt:MP.song);$('playerMsg').hidden=true;ab={a:null,b:null};abShow();}
+$('srcFile').onclick=()=>setSrc('file');$('srcYt').onclick=()=>setSrc('yt');$('srcMidi').onclick=()=>setSrc('midi');
 function fmt(t){t=Math.max(0,t||0);return Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');}
 function pMsg(t){$('playerMsg').hidden=!t;$('playerMsg').textContent=t||'';}
 const P={
-  time(){return src==='file'?audioEl.currentTime:(yt&&ytReady?yt.getCurrentTime():0);},
-  dur(){return src==='file'?(audioEl.duration||0):(yt&&ytReady?yt.getDuration():0);},
-  playing(){return src==='file'?!audioEl.paused:(yt&&ytReady&&yt.getPlayerState()===1);},
-  play(){if(src==='file')audioEl.play().catch(()=>pMsg('Musik tidak bisa diputar. Coba file lain.'));else if(yt&&ytReady)yt.playVideo();},
-  pause(){if(src==='file')audioEl.pause();else if(yt&&ytReady)yt.pauseVideo();},
-  seek(t){if(src==='file')audioEl.currentTime=t;else if(yt&&ytReady)yt.seekTo(t,true);},
-  rate(r){audioEl.playbackRate=r;try{audioEl.preservesPitch=true;}catch(e){}if(yt&&ytReady)yt.setPlaybackRate(r);}
+  time(){if(src==='midi')return mTime();return src==='file'?audioEl.currentTime:(yt&&ytReady?yt.getCurrentTime():0);},
+  dur(){if(src==='midi')return MP.song?MP.song.dur:0;return src==='file'?(audioEl.duration||0):(yt&&ytReady?yt.getDuration():0);},
+  playing(){if(src==='midi')return MP.playing;return src==='file'?!audioEl.paused:(yt&&ytReady&&yt.getPlayerState()===1);},
+  play(){if(src==='midi'){mPlay();return;}if(src==='file')audioEl.play().catch(()=>pMsg('Musik tidak bisa diputar. Coba file lain.'));else if(yt&&ytReady)yt.playVideo();},
+  pause(){if(src==='midi'){mPause();return;}if(src==='file')audioEl.pause();else if(yt&&ytReady)yt.pauseVideo();},
+  seek(t){if(src==='midi'){mSeek(t);return;}if(src==='file')audioEl.currentTime=t;else if(yt&&ytReady)yt.seekTo(t,true);},
+  rate(r){mRate(r);audioEl.playbackRate=r;try{audioEl.preservesPitch=true;}catch(e){}if(yt&&ytReady)yt.setPlaybackRate(r);}
 };
 function iPause(){try{P.pause();}catch(e){}}
 $('audioFile').onchange=()=>{const f=$('audioFile').files[0];if(!f)return;
@@ -983,6 +1010,125 @@ setInterval(()=>{if(activeTab!=='iring')return;const d=P.dur(),t=P.time(),pl=P.p
 },200);
 renderSaved();
 
+
+
+/* ---------- Pemutar MIDI ---------- */
+const GM_FAM=['Piano','Perkusi bernada','Organ','Gitar','Bass','Biola','Ansambel gesek','Tiup logam','Saksofon','Seruling','Synth (melodi)','Synth (latar)','Synth (efek)','Alat musik etnik','Perkusi','Efek suara'];
+const SYN={
+  bass:{id:'s-bass',gain:1.2,dec:1.2,synth:[[1,'triangle',1],[2,'sine',0.35]]},
+  lead:{id:'s-lead',gain:0.55,dec:1.5,synth:[[1,'square',0.5],[1.005,'sawtooth',0.3]]},
+  pad:{id:'s-pad',gain:0.6,dec:2.5,synth:[[1,'sine',1],[2,'sine',0.3],[1.003,'triangle',0.4]]}};
+function insForProgram(pg){const fam=pg>>3,by=id=>INSTR.find(i=>i.id===id);
+  return [by('piano'),by('xilofon'),by('organ'),pg<=24||pg===25?by('nilon'):by('gitar'),SYN.bass,by('biola'),by('biola'),by('terompet'),by('saksofon'),by('suling'),SYN.lead,SYN.pad,SYN.pad,by('harpa'),by('xilofon'),SYN.pad][fam];}
+function drumKind(n){if(n===35||n===36)return 'kick';if(n===38||n===40||n===37||n===39)return 'snare';if([41,43,45,47,48,50].includes(n))return 'tom';if([49,52,55,57].includes(n))return 'crash';return 'hat';}
+function parseMidi(buf){const d=new DataView(buf);let p=0;
+  const str=n=>{let x='';for(let i=0;i<n;i++)x+=String.fromCharCode(d.getUint8(p+i));p+=n;return x;};
+  const u32=()=>{const v=d.getUint32(p);p+=4;return v;},u16=()=>{const v=d.getUint16(p);p+=2;return v;};
+  if(str(4)!=='MThd')throw new Error('bukan file MIDI');const hl=u32(),fmt=u16(),ntr=u16(),div=u16();p=8+hl;
+  if(div&0x8000)throw new Error('format waktu SMPTE belum didukung');
+  const tracks=[];
+  for(let t=0;t<ntr&&p+8<=d.byteLength;t++){const id=str(4),len=u32(),end=Math.min(p+len,d.byteLength);if(id!=='MTrk'){p=end;continue;}
+    let tick=0,run=0,name='';const ev=[];
+    const vlq=()=>{let v=0,b;do{b=d.getUint8(p++);v=(v<<7)|(b&0x7f);}while(b&0x80&&p<end);return v;};
+    while(p<end){tick+=vlq();if(p>=end)break;let st=d.getUint8(p);
+      if(st===0xFF){p++;const type=d.getUint8(p++),l=vlq();
+        if(type===0x51&&l>=3)ev.push({tick,type:'tempo',us:(d.getUint8(p)<<16)|(d.getUint8(p+1)<<8)|d.getUint8(p+2)});
+        else if((type===0x03)&&!name){try{name=new TextDecoder().decode(new Uint8Array(buf,p,l)).trim();}catch(e){}}
+        else if(type===0x58)ev.push({tick,type:'ts',num:d.getUint8(p)});
+        p+=l;continue;}
+      if(st===0xF0||st===0xF7){p++;const l=vlq();p+=l;continue;}
+      if(st&0x80){run=st;p++;}else st=run;
+      const cmd=st&0xF0,ch=st&0x0F,a1=d.getUint8(p++),a2=(cmd===0xC0||cmd===0xD0)?0:d.getUint8(p++);
+      if(cmd===0x90&&a2>0)ev.push({tick,type:'on',ch,n:a1,v:a2});
+      else if(cmd===0x80||(cmd===0x90&&a2===0))ev.push({tick,type:'off',ch,n:a1});
+      else if(cmd===0xC0)ev.push({tick,type:'prog',ch,prog:a1});}
+    p=end;tracks.push({name,ev});}
+  return {div,tracks};}
+function buildMidiSong(m,title){
+  const tempos=[];let num=4;m.tracks.forEach(t=>t.ev.forEach(e=>{if(e.type==='tempo')tempos.push(e);if(e.type==='ts'&&e.tick===0)num=e.num;}));
+  tempos.sort((a,b)=>a.tick-b.tick);if(!tempos.length||tempos[0].tick>0)tempos.unshift({tick:0,us:500000});
+  const segs=[];let sec=0;for(let i=0;i<tempos.length;i++){const t=tempos[i];if(i)sec+=(t.tick-tempos[i-1].tick)*tempos[i-1].us/1e6/m.div;segs.push({tick:t.tick,sec,us:t.us});}
+  const t2s=tick=>{let i=segs.length-1;while(i>0&&segs[i].tick>tick)i--;const g=segs[i];return g.sec+(tick-g.tick)*g.us/1e6/m.div;};
+  const parts={};
+  m.tracks.forEach((tr,ti)=>{const prog={},open={};
+    tr.ev.forEach(e=>{if(e.type==='prog')prog[e.ch]=e.prog;
+      if(e.type==='on'){const key=ti+':'+e.ch;if(!parts[key])parts[key]={key,ch:e.ch,name:tr.name,prog:prog[e.ch]||0,notes:[]};
+        open[e.ch+':'+e.n]={tick:e.tick,n:e.n,v:e.v,part:parts[key]};}
+      if(e.type==='off'){const o=open[e.ch+':'+e.n];if(o){o.part.notes.push({tick:o.tick,end:e.tick,n:o.n,v:o.v});delete open[e.ch+':'+e.n];}}});
+    Object.values(open).forEach(o=>o.part.notes.push({tick:o.tick,end:o.tick+m.div,n:o.n,v:o.v}));});
+  const list=Object.values(parts).filter(x=>x.notes.length).map(x=>{const drum=x.ch===9;
+    x.drum=drum;x.ins=drum?null:insForProgram(x.prog);x.label=drum?'Drum':GM_FAM[x.prog>>3];x.on=true;
+    x.notes.sort((a,b)=>a.tick-b.tick);x.notes.forEach(n=>{n.t=t2s(n.tick);n.dur=Math.max(0.05,t2s(n.end)-n.t);});return x;});
+  const ev=[];list.forEach((x,pi)=>x.notes.forEach(n=>ev.push({t:n.t,dur:n.dur,n:n.n,v:n.v,pi})));ev.sort((a,b)=>a.t-b.t);
+  const dur=ev.length?Math.max(...ev.map(e=>e.t+e.dur))+0.5:0;
+  return {title,parts:list,ev,dur,div:m.div,num,t2s};}
+const MP={song:null,playing:false,pos:0,start:0,rate:1,timer:null,idx:0,voices:[],mine:-1};
+function mTime(){if(!MP.playing)return MP.pos;return Math.min(MP.song.dur,(ac().currentTime-MP.start)*MP.rate);}
+function mPlay(){if(!MP.song)return;const a=ac();if(MP.pos>=MP.song.dur-0.1)MP.pos=0;
+  MP.start=a.currentTime+0.08-MP.pos/MP.rate;MP.idx=0;while(MP.idx<MP.song.ev.length&&MP.song.ev[MP.idx].t<MP.pos)MP.idx++;
+  MP.playing=true;clearInterval(MP.timer);MP.timer=setInterval(mSched,25);mSched();}
+function mStopVoices(){const a=ac();MP.voices.forEach(h=>noteOffAt(h,a.currentTime,0.06));MP.voices=[];document.querySelectorAll('#ckb .on-r').forEach(k=>k.classList.remove('on-r'));}
+function mPause(){if(!MP.playing)return;MP.pos=mTime();MP.playing=false;clearInterval(MP.timer);mStopVoices();}
+function mSeek(t){const was=MP.playing;mPause();MP.pos=Math.max(0,Math.min(t,MP.song?MP.song.dur:0));if(was)mPlay();}
+function mRate(r){const was=MP.playing;if(was)mPause();MP.rate=r;if(was)mPlay();}
+function mSched(){const a=ac(),now=a.currentTime,song=MP.song,hz=now+0.15;
+  while(MP.idx<song.ev.length){const e=song.ev[MP.idx],at=MP.start+e.t/MP.rate;if(at>hz)break;MP.idx++;
+    if(at<now-0.03)continue;const part=song.parts[e.pi];
+    if(e.pi===MP.mine){const ms=Math.max(0,(at-now)*1000),k=document.querySelector('#ckb [data-cm="'+e.n+'"]');
+      if(k){setTimeout(()=>k.classList.add('on-r'),ms);setTimeout(()=>k.classList.remove('on-r'),ms+Math.max(120,e.dur/MP.rate*1000-30));}continue;}
+    if(!part.on)continue;
+    if(part.drum){drum(drumKind(e.n),at);continue;}
+    const h=noteOnWith(part.ins,e.n,Math.min(1,e.v/127)*0.85,bus(),at);noteOffAt(h,at+e.dur/MP.rate);MP.voices.push(h);if(MP.voices.length>160)MP.voices.splice(0,60);}
+  const t=mTime();
+  if(ab.a!=null&&ab.b!=null&&t>=ab.b){mSeek(ab.a);return;}
+  if(t>=song.dur){mPause();MP.pos=0;}}
+function renderParts(){const box=$('midiParts');box.innerHTML='';if(!MP.song)return;
+  MP.song.parts.forEach((x,i)=>{const row=document.createElement('div');row.className='part'+(i===MP.mine?' mine':'');
+    const cb=document.createElement('input');cb.type='checkbox';cb.checked=x.on;cb.title='Bunyikan bagian ini';cb.setAttribute('aria-label','Bunyikan '+x.label);
+    cb.onchange=()=>{x.on=cb.checked;};
+    const pn=document.createElement('div');pn.className='pn';pn.innerHTML='<b></b><span></span>';pn.querySelector('b').textContent=x.name||x.label;
+    pn.querySelector('span').textContent=x.label+' · '+x.notes.length+' nada'+(i===MP.mine?' · Anda yang memainkan':'');
+    row.append(cb,pn);
+    if(!x.drum){const mb=document.createElement('button');mb.className='mineBtn';mb.textContent=i===MP.mine?'✓ Bagian saya':'Saya mainkan';
+      mb.onclick=()=>{MP.mine=MP.mine===i?-1:i;renderParts();};row.append(mb);}
+    box.appendChild(row);});
+  $('midiActions').hidden=false;$('midiToSong').disabled=MP.mine<0;
+  $('midiToSong').textContent=MP.mine<0?'➕ Jadikan lagu latihan anak (pilih "Saya mainkan" dulu)':'➕ Jadikan lagu latihan anak';}
+function mLoad(song){mPause();MP.song=song;MP.pos=0;MP.mine=-1;
+  /* bagian yang paling banyak nada tinggi biasanya melodi */
+  const cand=song.parts.map((x,i)=>({i,x})).filter(o=>!o.x.drum&&o.x.ins!==SYN.bass);
+  if(cand.length){cand.sort((p1,p2)=>{const avg=o=>o.x.notes.reduce((s,n)=>s+n.n,0)/o.x.notes.length;return avg(p2)-avg(p1);});MP.mine=cand[0].i;}
+  [...new Set(song.parts.filter(x=>x.ins&&!x.ins.synth&&!x.ins.play).map(x=>x.ins))].forEach(ins=>loadInstrument(ins));
+  $('midiName').textContent=song.title+' · '+fmt(song.dur)+' · '+song.parts.length+' bagian. Bagian bertanda kuning tidak dibunyikan: itu bagian Anda, nadanya menyala di piano bawah.';
+  renderParts();$('playerCtl').hidden=false;ab={a:null,b:null};abShow();
+  if(!$('iTitle').value.trim()){$('iTitle').value=song.title;iState.title=song.title;iRender();}}
+$('midiFile').onchange=async()=>{const f=$('midiFile').files[0];if(!f)return;ac();
+  try{const m=parseMidi(await f.arrayBuffer());const song=buildMidiSong(m,f.name.replace(/\.[^.]+$/,''));
+    if(!song.ev.length)throw new Error('tidak ada nada');mLoad(song);$('midiMsg').hidden=true;}
+  catch(e){$('midiMsg').hidden=false;$('midiMsg').textContent='File ini tidak bisa dibaca sebagai MIDI ('+e.message+'). Pastikan berakhiran .mid.';}};
+$('midiDemo').onclick=()=>{ac();
+  /* contoh MIDI buatan aplikasi: Jingle Bells (lagu bebas hak cipta) dengan melodi, akord, bass, dan drum */
+  const mel=BUILTIN.find(x=>x.id==='jingle').notes,div=480,bpm=120,ev=[];let tick=0;
+  const tr=[{name:'Melodi',ev:[{tick:0,type:'prog',ch:0,prog:0}]},{name:'Akord',ev:[{tick:0,type:'prog',ch:1,prog:16}]},{name:'Bass',ev:[{tick:0,type:'prog',ch:2,prog:33}]},{name:'Drum',ev:[]},{name:'',ev:[{tick:0,type:'tempo',us:60e6/bpm}]}];
+  mel.forEach(n=>{const d=Math.round(n.d*div);tr[0].ev.push({tick,type:'on',ch:0,n:n.m+12,v:96},{tick:tick+d-20,type:'off',ch:0,n:n.m+12});tick+=d;});
+  const bars=Math.ceil(tick/(div*4));
+  const prog=['C','C','C','C','F','C','D7','G','C','C','C','C','F','C','G','C'];
+  const chordN={C:[0,4,7],F:[5,9,12],G:[7,11,14],D7:[2,6,9,12]},root={C:0,F:5,G:7,D7:2};
+  for(let b=0;b<bars;b++){const c=prog[b%prog.length],t0=b*div*4;
+    for(let k=0;k<4;k++){const tt=t0+k*div;
+      if(k%2===0)chordN[c].forEach(x=>tr[1].ev.push({tick:tt,type:'on',ch:1,n:60+x,v:60},{tick:tt+div*2-30,type:'off',ch:1,n:60+x}));
+      const bn=36+root[c]+(k%2?7:0);tr[2].ev.push({tick:tt,type:'on',ch:2,n:bn,v:90},{tick:tt+div-30,type:'off',ch:2,n:bn});
+      [[36,k%2===0],[38,k%2===1],[42,true]].forEach(([dn,ok])=>{if(ok)tr[3].ev.push({tick:tt,type:'on',ch:9,n:dn,v:90},{tick:tt+60,type:'off',ch:9,n:dn});});}}
+  tr.forEach(t=>t.ev.sort((a,b)=>a.tick-b.tick));
+  mLoad(buildMidiSong({div,tracks:tr},'Jingle Bells (contoh MIDI)'));
+  if(!$('iChords').value.trim()){$('iChords').value=prog.slice(0,bars).join(' ');iParse();}};
+$('midiToSong').onclick=()=>{if(MP.mine<0||!MP.song)return;const x=MP.song.parts[MP.mine],div=MP.song.div;
+  const on=[];x.notes.forEach(n=>{const l=on[on.length-1];if(l&&Math.abs(l.tick-n.tick)<div/16){if(n.n>l.n)l.n=n.n;}else on.push({tick:n.tick,n:n.n,end:n.end});});
+  const raw=on.map((o,i)=>{const nx=on[i+1];const d=((nx?nx.tick:o.end)-o.tick)/div;return [o.n,Math.max(0.25,Math.min(8,Math.round(d*4)/4))];}).slice(0,600);
+  const name=(MP.song.title||'Lagu MIDI').slice(0,40);
+  const sObj={id:'c'+Date.now(),name,tonic:60,meter:MP.song.num===3?3:4,raw,group:'Lagu saya',lvl:'Dari MIDI',custom:true,pickup:0,notes:raw.map(r=>({m:r[0],d:r[1]}))};
+  custom.push(sObj);saveCustom();renderSongs();
+  $('midiMsg').hidden=false;$('midiMsg').textContent='Tersimpan di menu Lagu → "Lagu saya": '+name+' ('+raw.length+' nada). Anak bisa memainkannya di Mode belajar dan Mode game.';};
 
 /* ---------- Tebak chord otomatis dari file musik ---------- */
 function following(){return !!(iState.times&&src==='file'&&audioEl.src&&$('followOn').checked);}
