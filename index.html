@@ -285,6 +285,8 @@ details.card[open]{gap:10px}
       <label class="btn" for="audioFile" style="display:inline-block">Pilih file musik</label>
       <input type="file" id="audioFile" accept="audio/*,video/mp4" hidden>
       <span class="muted" id="fileName" style="font-size:14px">Belum ada file. MP3 atau M4A dari HP.</span>
+      <button class="btn ghost" id="detectBtn" hidden>🔍 Tebak chord otomatis</button>
+      <p class="legend" id="detectMsg" style="flex-basis:100%" hidden></p>
     </div>
     <div id="ytPane" hidden class="field">
       <label for="ytUrl">Link YouTube</label>
@@ -323,6 +325,7 @@ details.card[open]{gap:10px}
     <div class="kb-wrap"><div class="ckb" id="ckb" aria-label="Tuts untuk chord ini"></div></div>
     <p class="legend"><span class="sw sw-r"></span> tangan kanan (chord) &nbsp; <span class="sw sw-l"></span> tangan kiri (nada bas)</p>
     <div class="chordstrip" id="chordStrip"></div>
+    <label class="toggle" id="followWrap" hidden><input type="checkbox" id="followOn" checked> <span><b>Chord ikut musik</b> (berganti sendiri sesuai waktu lagu)</span></label>
     <div class="controls">
       <button class="btn ghost" id="prevChord">‹ Sebelumnya</button>
       <button class="btn" id="nextChord">Berikutnya ›</button>
@@ -393,6 +396,7 @@ details.card[open]{gap:10px}
       <li><b>Tambah lagu:</b> ketuk kartu "+ Tambah lagu", tempel not angka dari internet atau buku lagu, tekan "Dengar" untuk mengecek, lalu "Simpan". Lagu tersimpan di HP ini.</li>
       <li><b>Pilih suara:</b> ketuk salah satu alat musik (piano, gitar, biola, angklung, gamelan, dan lainnya), lalu kecilkan volume keyboard Rixton. Suara terdengar dari speaker HP, dan pedal sustain ikut berfungsi. Supaya lebih merdu, sambungkan HP ke speaker Bluetooth. Angklung, gamelan, dan kotak musik dibuat langsung oleh aplikasi, jadi tetap jalan tanpa internet. Rekaman: Salamander Grand Piano (Alexander Holm, CC-BY 3.0) dan tonejs-instruments (Nicholaus Brosowsky).</li>
       <li><b>Mode game:</b> ketuk "Contohkan dulu" supaya anak melihat dan mendengar cara memainkan lagunya, lalu "Mulai game". Drum memberi ketukan, dan melodi panduan berbunyi pelan tepat saat nada harus ditekan. Balok warna turun ke keyboard. Setiap nada punya warna (Do merah, Re oranye, Mi kuning, Fa hijau, Sol biru, La nila, Si ungu), dan warna yang sama ada di tombol piano layar. Mulai dengan kecepatan Pelan.</li>
+      <li><b>Tebak chord otomatis:</b> setelah memilih file musik dari HP, ketuk "Tebak chord otomatis". Aplikasi mendengarkan lagunya lalu menebak chord dan waktunya, dan chord ikut berganti sendiri saat lagu diputar. Hasilnya tidak selalu tepat, jadi dengarkan dan perbaiki bila perlu. Untuk YouTube tidak bisa, karena YouTube tidak mengizinkan suaranya dianalisis.</li>
       <li><b>Iringan:</b> buka menu 🎤 Iringan, pilih file musik dari HP atau tempel link YouTube, lalu tempel chord lagunya. Chord yang harus ditekan menyala kuning (tangan kanan) dan hijau (nada bas tangan kiri). Lagu bisa diperlambat dan bagian tertentu bisa diulang.</li>
       <li><b>Urutan belajar:</b> mulai dari pelajaran 1, ulangi sampai dapat 3 bintang, baru pindah. Cukup 10–15 menit sehari.</li>
     </ol>
@@ -860,7 +864,7 @@ function extractChords(text){const out=[];
   return out;}
 function voicing(c,tr){const r=(c.root+tr+12)%12;const base=60+r;
   const right=QUAL[c.q].map(x=>base+x).filter(m=>m<=86);const b=(c.bass==null?r:(c.bass+tr+12)%12);const left=48+b;return {right,left};}
-const iState={chords:[],idx:0,tr:0,title:'',yt:'',id:null};
+const iState={chords:[],idx:0,tr:0,title:'',yt:'',id:null,times:null};
 let iSaved=store.get('pk-iring')||[];
 function nmList(ms){return ms.map(m=>solf(m)+' ('+letter(m)+')').join(' – ');}
 function buildCkb(){const kb=$('ckb');if(kb.childElementCount)return;const LO=48,HI=86;const whites=[];for(let m=LO;m<=HI;m++)if(!letter(m).includes('#'))whites.push(m);
@@ -894,10 +898,13 @@ function iNote(m){
   const k=document.querySelector('#ckb [data-cm="'+m+'"]');if(k){k.classList.add('hit');setTimeout(()=>k.classList.remove('hit'),250);}
   const want=new Set(QUAL[c.q].map(x=>(c.root+iState.tr+x+120)%12));
   const have=new Set([...downNotes,m].map(x=>((x%12)+12)%12));
+  if(following())return;
   if([...want].every(pc=>have.has(pc))&&performance.now()-iLastAdvance>350){iLastAdvance=performance.now();
     if(iState.idx<iState.chords.length-1){iState.idx++;iRender();}else{$('chordNext').textContent='Selesai! Tekan "Ke awal" untuk mengulang.';}}
 }
-function iParse(){const ch=extractChords($('iChords').value);iState.chords=ch;if(iState.idx>=ch.length)iState.idx=0;
+function iParse(){const ch=extractChords($('iChords').value);
+  if(iState.times&&iState.times.length!==ch.length){iState.times=null;$('detectMsg').hidden=false;$('detectMsg').textContent='Jumlah chord berubah, jadi waktu chord dihapus. Chord sekarang maju saat Anda menekannya.';}
+  iState.chords=ch;if(iState.idx>=ch.length)iState.idx=0;$('followWrap').hidden=!iState.times;
   $('iParse').textContent=ch.length?ch.length+' chord terbaca: '+ch.slice(0,14).map(c=>chordName(c,iState.tr)).join(' ')+(ch.length>14?' …':''):'Belum ada chord yang terbaca.';iRender();}
 $('iChords').addEventListener('input',iParse);
 $('iTitle').addEventListener('input',()=>{iState.title=$('iTitle').value.trim();iRender();});
@@ -909,13 +916,13 @@ $('trDown').onclick=()=>setTr(iState.tr-1);$('trUp').onclick=()=>setTr(iState.tr
 function renderSaved(){const box=$('iSaved');box.innerHTML='';
   iSaved.forEach(x=>{const b=document.createElement('button');b.className='chip';b.setAttribute('aria-pressed',x.id===iState.id);b.textContent='🎤 '+x.title;b.onclick=()=>loadSaved(x);box.appendChild(b);});
   $('iDel').hidden=!iState.id;}
-function loadSaved(x){iState.id=x.id;iState.title=x.title;iState.idx=0;$('iTitle').value=x.title;$('iChords').value=x.chords;setTr(x.tr||0);
+function loadSaved(x){iState.id=x.id;iState.title=x.title;iState.idx=0;iState.times=x.times||null;$('iTitle').value=x.title;$('iChords').value=x.chords;setTr(x.tr||0);
   if(x.yt){$('ytUrl').value=x.yt;setSrc('yt');loadYt(x.yt);}renderSaved();$('chordEditor').open=false;window.scrollTo(0,0);}
 $('iSave').onclick=()=>{if(!extractChords($('iChords').value).length){$('iChords').focus();return;}
-  const rec={id:iState.id||('i'+Date.now()),title:$('iTitle').value.trim()||'Lagu tanpa judul',chords:$('iChords').value,tr:iState.tr,yt:src==='yt'?$('ytUrl').value.trim():''};
+  const rec={id:iState.id||('i'+Date.now()),title:$('iTitle').value.trim()||'Lagu tanpa judul',chords:$('iChords').value,tr:iState.tr,yt:src==='yt'?$('ytUrl').value.trim():'',times:iState.times||null};
   const i=iSaved.findIndex(x=>x.id===rec.id);if(i>=0)iSaved[i]=rec;else iSaved.push(rec);store.set('pk-iring',iSaved);iState.id=rec.id;iState.title=rec.title;renderSaved();iRender();
   $('iParse').textContent='Tersimpan: '+rec.title+'.';};
-$('iNew').onclick=()=>{iState.id=null;iState.title='';$('iTitle').value='';$('iChords').value='';setTr(0);renderSaved();$('chordEditor').open=true;};
+$('iNew').onclick=()=>{iState.id=null;iState.times=null;iState.title='';$('iTitle').value='';$('iChords').value='';setTr(0);renderSaved();$('chordEditor').open=true;};
 let iDelArmed=false;
 $('iDel').onclick=()=>{if(!iDelArmed){iDelArmed=true;$('iDel').textContent='Yakin? Ketuk lagi';return;}
   iDelArmed=false;$('iDel').textContent='Hapus';iSaved=iSaved.filter(x=>x.id!==iState.id);store.set('pk-iring',iSaved);$('iNew').onclick();};
@@ -941,7 +948,7 @@ const P={
 function iPause(){try{P.pause();}catch(e){}}
 $('audioFile').onchange=()=>{const f=$('audioFile').files[0];if(!f)return;
   if(audioEl.src)URL.revokeObjectURL(audioEl.src);audioEl.src=URL.createObjectURL(f);$('fileName').textContent=f.name;
-  ab={a:null,b:null};abShow();$('playerCtl').hidden=false;pMsg('');ac();};
+  ab={a:null,b:null};abShow();$('playerCtl').hidden=false;pMsg('');ac();$('detectBtn').hidden=false;$('detectMsg').hidden=true;};
 audioEl.addEventListener('error',()=>{if(audioEl.src)pMsg('File ini tidak bisa diputar. Pilih file MP3 atau M4A.');});
 function ytId(u){u=u.trim();let m=u.match(/(?:youtu\.be\/|v=|\/shorts\/|\/embed\/|\/live\/)([A-Za-z0-9_-]{11})/);if(m)return m[1];if(/^[A-Za-z0-9_-]{11}$/.test(u))return u;return null;}
 let ytApi=null;
@@ -969,8 +976,67 @@ $('clearAB').onclick=()=>{ab={a:null,b:null};abShow();};
 setInterval(()=>{if(activeTab!=='iring')return;const d=P.dur(),t=P.time(),pl=P.playing();
   $('playBtn').textContent=pl?'⏸ Jeda':'▶ Putar';
   if(!seeking){$('timeText').textContent=fmt(t)+' / '+fmt(d);$('seek').value=d?Math.round(t/d*1000):0;}
-  if(pl&&ab.a!=null&&ab.b!=null&&t>=ab.b)P.seek(ab.a);},200);
+  if(pl&&ab.a!=null&&ab.b!=null&&t>=ab.b)P.seek(ab.a);
+  if(following()){const ts=iState.times;let i=0;while(i+1<ts.length&&ts[i+1]<=t+0.05)i++;
+    if(i!==iState.idx){iState.idx=i;iRender();}
+    const nx=ts[iState.idx+1];if(nx!=null&&iState.chords[iState.idx+1]){const sec=Math.max(0,nx-t);$('chordNext').textContent='Berikutnya: '+chordName(iState.chords[iState.idx+1],iState.tr)+' dalam '+sec.toFixed(1)+' detik';}}
+},200);
 renderSaved();
+
+
+/* ---------- Tebak chord otomatis dari file musik ---------- */
+function following(){return !!(iState.times&&src==='file'&&audioEl.src&&$('followOn').checked);}
+const NICE=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+function fftMag(re,im){const n=re.length;
+  for(let i=1,j=0;i<n;i++){let bit=n>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;if(i<j){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}}
+  for(let len=2;len<=n;len<<=1){const ang=-2*Math.PI/len,wr=Math.cos(ang),wi=Math.sin(ang);
+    for(let i=0;i<n;i+=len){let cr=1,ci=0;for(let j=0;j<len/2;j++){const a=i+j,b=a+len/2,xr=re[b]*cr-im[b]*ci,xi=re[b]*ci+im[b]*cr;
+      re[b]=re[a]-xr;im[b]=im[a]-xi;re[a]+=xr;im[a]+=xi;const t=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=t;}}}}
+async function detectChords(buf,onProg){
+  const sr0=buf.sampleRate,fac=Math.max(1,Math.round(sr0/11025)),sr=sr0/fac,chs=[];for(let c=0;c<buf.numberOfChannels;c++)chs.push(buf.getChannelData(c));
+  const n0=buf.length,len=Math.floor(n0/fac),x=new Float32Array(len);
+  for(let i=0;i<len;i++){let v=0;for(let k=0;k<fac;k++){const idx=i*fac+k;for(const ch of chs)v+=ch[idx];}x[i]=v/(fac*chs.length);}
+  const N=4096,H=2048,win=new Float32Array(N);for(let i=0;i<N;i++)win[i]=0.5-0.5*Math.cos(2*Math.PI*i/(N-1));
+  const binPc=new Int8Array(N/2),binW=new Float32Array(N/2),binBass=new Uint8Array(N/2);
+  for(let k=1;k<N/2;k++){const f=k*sr/N;if(f<55||f>1800){binPc[k]=-1;continue;}const p=69+12*Math.log2(f/440);binPc[k]=((Math.round(p)%12)+12)%12;binW[k]=1-Math.min(1,Math.abs(p-Math.round(p))*1.6);binBass[k]=f<200?1:0;}
+  const frames=[],re=new Float64Array(N),im=new Float64Array(N);const total=Math.max(1,Math.floor((len-N)/H));
+  for(let fi=0;fi*H+N<=len;fi++){const o=fi*H;let e=0;for(let i=0;i<N;i++){const v=x[o+i];e+=v*v;re[i]=v*win[i];im[i]=0;}
+    fftMag(re,im);const ch=new Float32Array(12),bs=new Float32Array(12);
+    for(let k=1;k<N/2;k++){const pc=binPc[k];if(pc<0)continue;const m=Math.log1p(40*Math.hypot(re[k],im[k]))*binW[k];ch[pc]+=m;if(binBass[k])bs[pc]+=m;}
+    frames.push({ch,bs,e:Math.sqrt(e/N)});
+    if(fi%60===0){onProg(fi/total);await new Promise(r=>setTimeout(r,0));}}
+  const maxE=Math.max(...frames.map(f=>f.e))||1;
+  const T=[];for(let r=0;r<12;r++){T.push({r,q:'',v:[0,4,7].map(i=>(r+i)%12)});T.push({r,q:'m',v:[0,3,7].map(i=>(r+i)%12)});}
+  const S=T.length+1;/* +1 = tidak ada chord (diam) */
+  const em=frames.map(f=>{const n=Math.hypot(...f.ch)||1,b=Math.max(...f.bs)||1,out=new Float32Array(S);
+    const mean=f.ch.reduce((a,v)=>a+v,0)/12;
+    T.forEach((t,i)=>{let sc=0;t.v.forEach((pc,j)=>sc+=(f.ch[pc]-mean)*(j===0?1.1:1));out[i]=sc/n+0.25*f.bs[t.r]/b;});
+    out[S-1]=f.e<maxE*0.04?2:-1;return out;});
+  /* Viterbi: berganti chord diberi "biaya" supaya hasilnya tidak loncat-loncat */
+  const pen=0.45,F=em.length;let prev=em[0].slice();const back=[];
+  for(let t=1;t<F;t++){let bi=0;for(let i=1;i<S;i++)if(prev[i]>prev[bi])bi=i;const cur=new Float32Array(S),bk=new Int16Array(S);
+    for(let i=0;i<S;i++){const stay=prev[i],sw=prev[bi]-pen;if(stay>=sw){cur[i]=stay+em[t][i];bk[i]=i;}else{cur[i]=sw+em[t][i];bk[i]=bi;}}
+    back.push(bk);prev=cur;}
+  let st=0;for(let i=1;i<S;i++)if(prev[i]>prev[st])st=i;const path=new Int16Array(F);path[F-1]=st;for(let t=F-1;t>0;t--){st=back[t-1][st];path[t-1]=st;}
+  const hop=H/sr;let segs=[];for(let t=0;t<F;t++){const s=path[t];if(!segs.length||segs[segs.length-1].s!==s)segs.push({s,t0:t*hop,t1:(t+1)*hop});else segs[segs.length-1].t1=(t+1)*hop;}
+  segs=segs.filter(g=>g.s!==S-1);
+  const merged=[];for(const g of segs){const last=merged[merged.length-1];if(g.t1-g.t0<0.7&&last){last.t1=g.t1;continue;}if(last&&last.s===g.s){last.t1=g.t1;continue;}merged.push(g);}
+  onProg(1);
+  return merged.map(g=>({name:NICE[T[g.s].r]+T[g.s].q,t:Math.max(0,g.t0-0.05)}));
+}
+$('detectBtn').onclick=async()=>{
+  const f=$('audioFile').files[0];if(!f)return;const btn=$('detectBtn'),msg=$('detectMsg');
+  btn.disabled=true;msg.hidden=false;msg.textContent='Membaca file musik…';
+  try{const a=ac();const ab0=await f.arrayBuffer();const buf=await new Promise((res,rej)=>a.decodeAudioData(ab0,res,rej));
+    const res=await detectChords(buf,p=>{msg.textContent='Mendengarkan lagu… '+Math.round(p*100)+'%';});
+    if(!res.length){msg.textContent='Tidak ada chord yang bisa ditebak dari file ini.';return;}
+    const lines=[];for(let i=0;i<res.length;i+=4)lines.push(res.slice(i,i+4).map(r=>r.name).join('  '));
+    if(!$('iTitle').value.trim()){$('iTitle').value=f.name.replace(/\.[^.]+$/,'');iState.title=$('iTitle').value;}
+    iState.times=res.map(r=>r.t);$('iChords').value=lines.join('\n');iState.idx=0;iParse();$('followWrap').hidden=false;$('followOn').checked=true;
+    msg.textContent='Selesai: '+res.length+' chord ditebak. Hasil tebakan bisa salah. Putar lagunya dan dengarkan; kalau ada chord yang tidak cocok, perbaiki namanya di bagian 3 (jumlah chord jangan diubah supaya waktunya tetap).';
+  }catch(e){msg.textContent='File ini tidak bisa dianalisis. Coba file MP3 lain.';}
+  finally{btn.disabled=false;}
+};
 
 /* ---------- Menu tab ---------- */
 function showTab(t){
