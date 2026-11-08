@@ -979,10 +979,16 @@ $('audioFile').onchange=()=>{const f=$('audioFile').files[0];if(!f)return;
 audioEl.addEventListener('error',()=>{if(audioEl.src)pMsg('File ini tidak bisa diputar. Pilih file MP3 atau M4A.');});
 function ytId(u){u=u.trim();let m=u.match(/(?:youtu\.be\/|v=|\/shorts\/|\/embed\/|\/live\/)([A-Za-z0-9_-]{11})/);if(m)return m[1];if(/^[A-Za-z0-9_-]{11}$/.test(u))return u;return null;}
 let ytApi=null;
-function ytLoadApi(){if(ytApi)return ytApi;ytApi=new Promise((res,rej)=>{window.onYouTubeIframeAPIReady=()=>res();const sc=document.createElement('script');sc.src='https://www.youtube.com/iframe_api';sc.onerror=()=>rej();document.head.appendChild(sc);setTimeout(()=>rej(new Error('timeout')),12000);});ytApi.catch(()=>{ytApi=null;});return ytApi;}
+function ytLoadApi(){if(window.YT&&YT.Player)return Promise.resolve();if(ytApi)return ytApi;ytApi=new Promise((res,rej)=>{const prev=window.onYouTubeIframeAPIReady;window.onYouTubeIframeAPIReady=()=>{if(prev)try{prev();}catch(e){}res();};const sc=document.createElement('script');sc.src='https://www.youtube.com/iframe_api';sc.onerror=()=>rej(new Error('blocked'));document.head.appendChild(sc);setTimeout(()=>{if(window.YT&&YT.Player)res();else rej(new Error('timeout'));},20000);});ytApi.catch(()=>{ytApi=null;});return ytApi;}
+const inClaude=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
 async function loadYt(u){const id=ytId(u);if(!id){pMsg('Link YouTube tidak dikenali. Salin link dari tombol Bagikan di aplikasi YouTube.');return;}
   pMsg('Memuat video…');
-  try{await ytLoadApi();}catch(e){pMsg('Pemutar YouTube tidak bisa dimuat. Periksa internet, atau buka aplikasi dari ikonnya (bukan dari claude.ai).');return;}
+  if(inClaude){pMsg('Halaman ini sedang dibuka di dalam claude.ai, dan claude.ai tidak mengizinkan YouTube diputar di dalamnya. Buka Piano Kecilku dari ikonnya di HP, atau dari hendrayanto47-collab.github.io/piano-kecilku di Chrome.');return;}
+  try{await ytLoadApi();}catch(e){
+    /* cadangan: pemutar YouTube biasa tanpa pengatur kecepatan */
+    $('ytBox').hidden=false;$('ytPlayer').outerHTML='<iframe id="ytPlayer" src="https://www.youtube.com/embed/'+id+'?playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="Video YouTube"></iframe>';
+    yt=null;ytReady=false;$('playerCtl').hidden=true;
+    pMsg('Video diputar dengan pemutar YouTube biasa: kecepatan dan ulangi bagian memakai tombol di dalam video (ikon ⚙). Kalau video tidak muncul, periksa internet.');return;}
   $('ytBox').hidden=false;ab={a:null,b:null};abShow();
   if(yt&&ytReady){yt.cueVideoById(id);$('playerCtl').hidden=false;pMsg('');return;}
   ytReady=false;
