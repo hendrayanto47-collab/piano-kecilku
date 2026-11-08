@@ -1,5 +1,5 @@
 /* Piano Kecilku: simpan aplikasi dan suara di HP supaya cepat dan bisa dipakai tanpa internet */
-const APP = 'pk-app-v1', SOUNDS = 'pk-sounds-v1';
+const APP = 'pk-app-v2', SOUNDS = 'pk-sounds-v1';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(APP).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', e => {

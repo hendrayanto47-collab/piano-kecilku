@@ -156,7 +156,7 @@ body.fs #fsExit{display:inline-block;margin-left:auto}
 /* Kerangka aplikasi: bilah atas, tab, menu bawah */
 body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .appbar{max-width:760px;margin:0 auto 14px;display:flex;flex-direction:row;align-items:center;gap:10px}
-.appbar h1{font-size:22px;flex:1;min-width:0;white-space:nowrap}
+.appbar h1{font-size:22px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .logo{width:36px;height:36px;flex:none}
 .status-chip{flex:none;display:flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:6px 10px;font-size:13px;font-weight:700;max-width:52%}
 .status-chip span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -173,6 +173,24 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .tabbtn .ti{font-size:22px;line-height:1}
 .tabbtn[aria-current="page"]{color:var(--accent);background:var(--paper)}
 #songGroups .group-label:first-child{margin-top:0}
+/* Mode iringan */
+.ytbox{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;background:#000;border-radius:12px;overflow:hidden}
+.ytbox iframe,.ytbox>div{position:absolute;inset:0;width:100%;height:100%;border:0}
+.chordnow{display:flex;align-items:center;gap:14px}
+.chordbig{min-width:96px;height:96px;padding:0 12px;border-radius:20px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:38px;line-height:1;flex:none}
+.chordstrip{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.chordstrip button{flex:none;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);border-radius:10px;padding:6px 10px;font-weight:800;font-family:var(--display);font-size:16px}
+.chordstrip button.cur{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chordstrip button.past{opacity:.5}
+.ckb{position:relative;height:120px;min-width:320px;display:flex}
+.ckb .w{padding-bottom:6px}
+.ckb .w.on-r,.ckb .b.on-r{background:var(--sun)}
+.ckb .w.on-l,.ckb .b.on-l{background:#7FD3A8}
+.ckb .w.hit,.ckb .b.hit{background:var(--ok)!important}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px}
+.sw-r{background:var(--sun)} .sw-l{background:#7FD3A8}
+details.card summary{font-size:18px}
+details.card[open]{gap:10px}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -256,6 +274,79 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   </section>
  </section>
 
+ <section class="tab" id="tab-iring" hidden>
+  <h2>Mode Iringan</h2>
+  <p class="muted">Putar lagu kesukaan dari HP atau YouTube, lalu iringi dengan keyboard. Chord yang harus ditekan menyala di piano.</p>
+
+  <section class="card">
+    <h3>1. Musik</h3>
+    <div class="modes" role="group" aria-label="Sumber musik"><button class="seg" id="srcFile" aria-pressed="true">📁 File dari HP</button><button class="seg" id="srcYt" aria-pressed="false">▶️ YouTube</button></div>
+    <div id="filePane" class="controls">
+      <label class="btn" for="audioFile" style="display:inline-block">Pilih file musik</label>
+      <input type="file" id="audioFile" accept="audio/*,video/mp4" hidden>
+      <span class="muted" id="fileName" style="font-size:14px">Belum ada file. MP3 atau M4A dari HP.</span>
+    </div>
+    <div id="ytPane" hidden class="field">
+      <label for="ytUrl">Link YouTube</label>
+      <div class="controls" style="flex-wrap:nowrap"><input id="ytUrl" type="url" inputmode="url" placeholder="https://youtu.be/..." style="flex:1;min-width:0"><button class="btn" id="ytLoad">Muat</button></div>
+    </div>
+    <div class="ytbox" id="ytBox" hidden><div id="ytPlayer"></div></div>
+    <audio id="audioEl" preload="auto" hidden></audio>
+    <p class="legend" id="playerMsg" hidden></p>
+    <div id="playerCtl" hidden style="display:flex;flex-direction:column;gap:10px">
+      <div class="controls" style="flex-wrap:nowrap">
+        <button class="btn" id="playBtn" style="min-width:96px">▶ Putar</button>
+        <span id="timeText" style="font-variant-numeric:tabular-nums;font-size:14px;white-space:nowrap">0:00 / 0:00</span>
+        <input type="range" id="seek" min="0" max="1000" value="0" style="flex:1;min-width:0" aria-label="Posisi lagu">
+      </div>
+      <div class="controls">
+        <span style="font-size:14px;font-weight:700">Kecepatan</span>
+        <div class="speeds" role="group" aria-label="Kecepatan lagu"><button class="chip" data-rate="0.5">50%</button><button class="chip" data-rate="0.75">75%</button><button class="chip" data-rate="1" aria-pressed="true">100%</button></div>
+      </div>
+      <div class="controls">
+        <span style="font-size:14px;font-weight:700">Ulangi bagian</span>
+        <button class="chip" id="markA">Tandai awal</button><button class="chip" id="markB">Tandai akhir</button><button class="chip" id="clearAB">Hapus</button>
+        <span class="muted" id="abText" style="font-size:14px;flex-basis:100%">Tidak mengulang. Tekan "Tandai awal" dan "Tandai akhir" saat lagu berjalan, misalnya di reff.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="title-row" style="justify-content:space-between"><h3 id="iSongName">2. Chord</h3><span class="muted" id="iPos" style="font-size:14px;font-variant-numeric:tabular-nums"></span></div>
+    <div class="chordnow">
+      <div class="chordbig" id="chordBig">—</div>
+      <div style="min-width:0">
+        <p id="chordNotes" style="font-weight:700">Tempel chord lagu di bawah.</p>
+        <p class="muted" id="chordNext" style="font-size:14px"></p>
+      </div>
+    </div>
+    <div class="kb-wrap"><div class="ckb" id="ckb" aria-label="Tuts untuk chord ini"></div></div>
+    <p class="legend"><span class="sw sw-r"></span> tangan kanan (chord) &nbsp; <span class="sw sw-l"></span> tangan kiri (nada bas)</p>
+    <div class="chordstrip" id="chordStrip"></div>
+    <div class="controls">
+      <button class="btn ghost" id="prevChord">‹ Sebelumnya</button>
+      <button class="btn" id="nextChord">Berikutnya ›</button>
+      <button class="btn ghost" id="firstChord">Ke awal</button>
+    </div>
+    <p class="legend">Tekan chord yang menyala di keyboard Rixton, aplikasi otomatis pindah ke chord berikutnya. Bisa juga pakai tombol Berikutnya.</p>
+  </section>
+
+  <details class="card" id="chordEditor" open>
+    <summary>3. Tulis atau tempel chord</summary>
+    <div class="field"><label for="iTitle">Judul lagu</label><input id="iTitle" type="text" maxlength="60" placeholder="Judul lagu"></div>
+    <div class="field"><label for="iChords">Chord (boleh tempel beserta liriknya, aplikasi mengambil chord-nya saja)</label>
+      <textarea id="iChords" placeholder="Intro: C G Am F&#10;C        G&#10;Lirik baris pertama&#10;Am       F&#10;Lirik baris kedua"></textarea></div>
+    <p class="muted" id="iParse" style="font-size:14px">Belum ada chord.</p>
+    <div class="controls">
+      <span style="font-size:14px;font-weight:700">Ubah kunci</span>
+      <button class="chip" id="trDown">− ½</button><span id="trText" style="font-variant-numeric:tabular-nums;font-weight:700">0</span><button class="chip" id="trUp">+ ½</button>
+    </div>
+    <div class="controls"><button class="btn" id="iSave">Simpan lagu iringan</button><button class="btn ghost" id="iNew">Lagu baru</button><button class="btn danger" id="iDel" hidden>Hapus</button></div>
+    <p class="legend">Cari di Google: <b>chord [judul lagu]</b>, salin bagian chord-nya, lalu tempel di sini. Link YouTube ikut tersimpan.</p>
+    <div id="iSaved" class="instr"></div>
+  </details>
+ </section>
+
  <section class="tab" id="tab-set" hidden>
   <h2>Pengaturan</h2>
   <section class="card conn" aria-live="polite">
@@ -302,6 +393,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
       <li><b>Tambah lagu:</b> ketuk kartu "+ Tambah lagu", tempel not angka dari internet atau buku lagu, tekan "Dengar" untuk mengecek, lalu "Simpan". Lagu tersimpan di HP ini.</li>
       <li><b>Pilih suara:</b> ketuk salah satu alat musik (piano, gitar, biola, angklung, gamelan, dan lainnya), lalu kecilkan volume keyboard Rixton. Suara terdengar dari speaker HP, dan pedal sustain ikut berfungsi. Supaya lebih merdu, sambungkan HP ke speaker Bluetooth. Angklung, gamelan, dan kotak musik dibuat langsung oleh aplikasi, jadi tetap jalan tanpa internet. Rekaman: Salamander Grand Piano (Alexander Holm, CC-BY 3.0) dan tonejs-instruments (Nicholaus Brosowsky).</li>
       <li><b>Mode game:</b> ketuk "Contohkan dulu" supaya anak melihat dan mendengar cara memainkan lagunya, lalu "Mulai game". Drum memberi ketukan, dan melodi panduan berbunyi pelan tepat saat nada harus ditekan. Balok warna turun ke keyboard. Setiap nada punya warna (Do merah, Re oranye, Mi kuning, Fa hijau, Sol biru, La nila, Si ungu), dan warna yang sama ada di tombol piano layar. Mulai dengan kecepatan Pelan.</li>
+      <li><b>Iringan:</b> buka menu 🎤 Iringan, pilih file musik dari HP atau tempel link YouTube, lalu tempel chord lagunya. Chord yang harus ditekan menyala kuning (tangan kanan) dan hijau (nada bas tangan kiri). Lagu bisa diperlambat dan bagian tertentu bisa diulang.</li>
       <li><b>Urutan belajar:</b> mulai dari pelajaran 1, ulangi sampai dapat 3 bintang, baru pindah. Cukup 10–15 menit sehari.</li>
     </ol>
   </details>
@@ -311,7 +403,8 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 <nav class="tabbar" aria-label="Menu utama">
   <button class="tabbtn" data-tab="main" aria-current="page"><span class="ti">🎹</span><span>Main</span></button>
   <button class="tabbtn" data-tab="songs"><span class="ti">🎵</span><span>Lagu</span></button>
-  <button class="tabbtn" data-tab="set"><span class="ti">⚙️</span><span>Pengaturan</span></button>
+  <button class="tabbtn" data-tab="iring"><span class="ti">🎤</span><span>Iringan</span></button>
+  <button class="tabbtn" data-tab="set"><span class="ti">⚙️</span><span>Atur</span></button>
 </nav>
 
 <div class="overlay" id="overlay" hidden>
@@ -546,6 +639,7 @@ function render(){
   $('next').innerHTML=song.notes.slice(idx,idx+8).map(n=>'<span>'+solf(n.m)+'</span>').join('');
 }
 function press(m){
+  if(activeTab==='iring'){iNote(m);return;}
   $('lastNote').innerHTML='Tombol terakhir ditekan: <b>'+solf(m)+'</b> ('+letter(m)+Math.floor(m/12-1)+')';
   if(mode==='game'){gameHit(m);return;}
   if(demoToken)return;
@@ -744,9 +838,143 @@ $('testBtn').onclick=()=>{ac();$('testMsg').hidden=false;['kick','hat','snare','
 if(prefs.musicVol!=null)$('musicVol').value=prefs.musicVol;
 $('musicVol').oninput=()=>{prefs.musicVol=+$('musicVol').value;store.set('pk-prefs',prefs);if(musicBus)bus();};
 
+
+/* ---------- Mode Iringan: musik dari HP / YouTube + chord ---------- */
+let activeTab='main';const downNotes=new Set();
+const NOTE_IDX={C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
+const QUAL={'':[0,4,7],'maj':[0,4,7],'m':[0,3,7],'min':[0,3,7],'7':[0,4,7,10],'maj7':[0,4,7,11],'M7':[0,4,7,11],'m7':[0,3,7,10],'min7':[0,3,7,10],
+  'sus':[0,5,7],'sus2':[0,2,7],'sus4':[0,5,7],'7sus4':[0,5,7,10],'dim':[0,3,6],'dim7':[0,3,6,9],'aug':[0,4,8],'+':[0,4,8],'add9':[0,4,7,14],'add2':[0,2,4,7],
+  '6':[0,4,7,9],'m6':[0,3,7,9],'9':[0,4,7,10,14],'m9':[0,3,7,10,14],'maj9':[0,4,7,11,14],'m7b5':[0,3,6,10],'5':[0,7]};
+const CHORD_RE=/^([A-G])(#|b)?(maj9|maj7|maj|min7|min|m7b5|m9|m7|m6|M7|m|7sus4|sus2|sus4|sus|dim7|dim|aug|add9|add2|\+|9|7|6|5)?(?:\/([A-G])(#|b)?)?$/;
+const SHARP_NAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],FLAT_NAMES=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+function parseChordTok(tok){const m=tok.match(CHORD_RE);if(!m)return null;
+  const root=NOTE_IDX[m[1]+(m[2]||'')],q=m[3]||'',bass=m[4]?NOTE_IDX[m[4]+(m[5]||'')]:null;
+  return {root,q,bass,flat:m[2]==='b'||(m[5]==='b')};}
+function chordName(c,tr){const r=(c.root+tr+12)%12,fl=c.flat;const nm=(fl?FLAT_NAMES:SHARP_NAMES)[r]+c.q;
+  return c.bass==null?nm:nm+'/'+(fl?FLAT_NAMES:SHARP_NAMES)[(c.bass+tr+12)%12];}
+function extractChords(text){const out=[];
+  text.split(/\n/).forEach(line=>{const toks=line.replace(/[|\[\]().,;:–—-]/g,' ').split(/\s+/).filter(Boolean);
+    const ch=toks.map(parseChordTok);const n=ch.filter(Boolean).length;
+    /* baris dianggap baris chord bila sebagian besar katanya adalah chord */
+    if(n&&(n>=toks.length*0.6||/^\s*(intro|reff?|chorus|verse|bridge|outro|int|musik)/i.test(line)))ch.forEach(c=>{if(c)out.push(c);});});
+  return out;}
+function voicing(c,tr){const r=(c.root+tr+12)%12;const base=60+r;
+  const right=QUAL[c.q].map(x=>base+x).filter(m=>m<=86);const b=(c.bass==null?r:(c.bass+tr+12)%12);const left=48+b;return {right,left};}
+const iState={chords:[],idx:0,tr:0,title:'',yt:'',id:null};
+let iSaved=store.get('pk-iring')||[];
+function nmList(ms){return ms.map(m=>solf(m)+' ('+letter(m)+')').join(' – ');}
+function buildCkb(){const kb=$('ckb');if(kb.childElementCount)return;const LO=48,HI=86;const whites=[];for(let m=LO;m<=HI;m++)if(!letter(m).includes('#'))whites.push(m);
+  kb.style.minWidth=Math.max(320,whites.length*22)+'px';const W=100/whites.length;
+  whites.forEach((m,i)=>{const d=document.createElement('div');d.className='w'+(m===60?' mid':'');d.dataset.cm=m;
+    d.innerHTML='<span class="let">'+letter(m)+(m===60?'4':'')+'</span>';kb.appendChild(d);
+    if(m+1<=HI&&letter(m+1).includes('#')){const b=document.createElement('div');b.className='b';b.dataset.cm=m+1;b.style.left=((i+1)*W-W*0.3)+'%';b.style.width=(W*0.6)+'%';kb.appendChild(b);}});
+  kb.addEventListener('pointerdown',e=>{const k=e.target.closest('[data-cm]');if(!k)return;e.preventDefault();const m=+k.dataset.cm;tone(m);iNote(m);});}
+function iRender(){
+  buildCkb();const c=iState.chords[iState.idx];
+  $('iSongName').textContent=iState.title?iState.title:'2. Chord';
+  $('iPos').textContent=iState.chords.length?(iState.idx+1)+' / '+iState.chords.length:'';
+  document.querySelectorAll('#ckb [data-cm]').forEach(k=>k.classList.remove('on-r','on-l','hit'));
+  if(!c){$('chordBig').textContent='—';$('chordNotes').textContent='Tempel chord lagu di bagian 3.';$('chordNext').textContent='';$('chordStrip').innerHTML='';return;}
+  const v=voicing(c,iState.tr);
+  $('chordBig').textContent=chordName(c,iState.tr);
+  $('chordNotes').textContent='Kanan: '+nmList(v.right);
+  const nx=iState.chords[iState.idx+1];
+  $('chordNext').textContent='Kiri: '+solf(v.left)+' ('+letter(v.left)+')'+(nx?' · Berikutnya: '+chordName(nx,iState.tr):' · Chord terakhir');
+  v.right.forEach(m=>{const k=document.querySelector('#ckb [data-cm="'+m+'"]');if(k)k.classList.add('on-r');});
+  const kl=document.querySelector('#ckb [data-cm="'+v.left+'"]');if(kl)kl.classList.add('on-l');
+  const st=$('chordStrip');st.innerHTML='';
+  iState.chords.forEach((ch,i)=>{const b=document.createElement('button');b.textContent=chordName(ch,iState.tr);if(i===iState.idx)b.className='cur';else if(i<iState.idx)b.className='past';
+    b.onclick=()=>{iState.idx=i;iRender();};st.appendChild(b);});
+  const cur=st.children[iState.idx];if(cur)st.scrollLeft=cur.offsetLeft-st.clientWidth/2+cur.offsetWidth/2;
+}
+let iLastAdvance=0;
+function iNote(m){
+  $('lastNote').innerHTML='Tombol terakhir ditekan: <b>'+solf(m)+'</b> ('+letter(m)+Math.floor(m/12-1)+')';
+  const c=iState.chords[iState.idx];if(!c)return;
+  const k=document.querySelector('#ckb [data-cm="'+m+'"]');if(k){k.classList.add('hit');setTimeout(()=>k.classList.remove('hit'),250);}
+  const want=new Set(QUAL[c.q].map(x=>(c.root+iState.tr+x+120)%12));
+  const have=new Set([...downNotes,m].map(x=>((x%12)+12)%12));
+  if([...want].every(pc=>have.has(pc))&&performance.now()-iLastAdvance>350){iLastAdvance=performance.now();
+    if(iState.idx<iState.chords.length-1){iState.idx++;iRender();}else{$('chordNext').textContent='Selesai! Tekan "Ke awal" untuk mengulang.';}}
+}
+function iParse(){const ch=extractChords($('iChords').value);iState.chords=ch;if(iState.idx>=ch.length)iState.idx=0;
+  $('iParse').textContent=ch.length?ch.length+' chord terbaca: '+ch.slice(0,14).map(c=>chordName(c,iState.tr)).join(' ')+(ch.length>14?' …':''):'Belum ada chord yang terbaca.';iRender();}
+$('iChords').addEventListener('input',iParse);
+$('iTitle').addEventListener('input',()=>{iState.title=$('iTitle').value.trim();iRender();});
+$('prevChord').onclick=()=>{if(iState.idx>0){iState.idx--;iRender();}};
+$('nextChord').onclick=()=>{if(iState.idx<iState.chords.length-1){iState.idx++;iRender();}};
+$('firstChord').onclick=()=>{iState.idx=0;iRender();};
+function setTr(v){iState.tr=Math.max(-11,Math.min(11,v));$('trText').textContent=(iState.tr>0?'+':'')+iState.tr;iParse();}
+$('trDown').onclick=()=>setTr(iState.tr-1);$('trUp').onclick=()=>setTr(iState.tr+1);
+function renderSaved(){const box=$('iSaved');box.innerHTML='';
+  iSaved.forEach(x=>{const b=document.createElement('button');b.className='chip';b.setAttribute('aria-pressed',x.id===iState.id);b.textContent='🎤 '+x.title;b.onclick=()=>loadSaved(x);box.appendChild(b);});
+  $('iDel').hidden=!iState.id;}
+function loadSaved(x){iState.id=x.id;iState.title=x.title;iState.idx=0;$('iTitle').value=x.title;$('iChords').value=x.chords;setTr(x.tr||0);
+  if(x.yt){$('ytUrl').value=x.yt;setSrc('yt');loadYt(x.yt);}renderSaved();$('chordEditor').open=false;window.scrollTo(0,0);}
+$('iSave').onclick=()=>{if(!extractChords($('iChords').value).length){$('iChords').focus();return;}
+  const rec={id:iState.id||('i'+Date.now()),title:$('iTitle').value.trim()||'Lagu tanpa judul',chords:$('iChords').value,tr:iState.tr,yt:src==='yt'?$('ytUrl').value.trim():''};
+  const i=iSaved.findIndex(x=>x.id===rec.id);if(i>=0)iSaved[i]=rec;else iSaved.push(rec);store.set('pk-iring',iSaved);iState.id=rec.id;iState.title=rec.title;renderSaved();iRender();
+  $('iParse').textContent='Tersimpan: '+rec.title+'.';};
+$('iNew').onclick=()=>{iState.id=null;iState.title='';$('iTitle').value='';$('iChords').value='';setTr(0);renderSaved();$('chordEditor').open=true;};
+let iDelArmed=false;
+$('iDel').onclick=()=>{if(!iDelArmed){iDelArmed=true;$('iDel').textContent='Yakin? Ketuk lagi';return;}
+  iDelArmed=false;$('iDel').textContent='Hapus';iSaved=iSaved.filter(x=>x.id!==iState.id);store.set('pk-iring',iSaved);$('iNew').onclick();};
+
+/* pemutar: file dari HP atau YouTube */
+let src='file',yt=null,ytReady=false,ab={a:null,b:null},seeking=false;
+const audioEl=$('audioEl');
+function setSrc(x){src=x;$('srcFile').setAttribute('aria-pressed',x==='file');$('srcYt').setAttribute('aria-pressed',x==='yt');
+  $('filePane').hidden=x!=='file';$('ytPane').hidden=x!=='yt';$('ytBox').hidden=x!=='yt'||!yt;iPause();
+  $('playerCtl').hidden=!(x==='file'?audioEl.src:yt);$('playerMsg').hidden=true;}
+$('srcFile').onclick=()=>setSrc('file');$('srcYt').onclick=()=>setSrc('yt');
+function fmt(t){t=Math.max(0,t||0);return Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');}
+function pMsg(t){$('playerMsg').hidden=!t;$('playerMsg').textContent=t||'';}
+const P={
+  time(){return src==='file'?audioEl.currentTime:(yt&&ytReady?yt.getCurrentTime():0);},
+  dur(){return src==='file'?(audioEl.duration||0):(yt&&ytReady?yt.getDuration():0);},
+  playing(){return src==='file'?!audioEl.paused:(yt&&ytReady&&yt.getPlayerState()===1);},
+  play(){if(src==='file')audioEl.play().catch(()=>pMsg('Musik tidak bisa diputar. Coba file lain.'));else if(yt&&ytReady)yt.playVideo();},
+  pause(){if(src==='file')audioEl.pause();else if(yt&&ytReady)yt.pauseVideo();},
+  seek(t){if(src==='file')audioEl.currentTime=t;else if(yt&&ytReady)yt.seekTo(t,true);},
+  rate(r){audioEl.playbackRate=r;try{audioEl.preservesPitch=true;}catch(e){}if(yt&&ytReady)yt.setPlaybackRate(r);}
+};
+function iPause(){try{P.pause();}catch(e){}}
+$('audioFile').onchange=()=>{const f=$('audioFile').files[0];if(!f)return;
+  if(audioEl.src)URL.revokeObjectURL(audioEl.src);audioEl.src=URL.createObjectURL(f);$('fileName').textContent=f.name;
+  ab={a:null,b:null};abShow();$('playerCtl').hidden=false;pMsg('');ac();};
+audioEl.addEventListener('error',()=>{if(audioEl.src)pMsg('File ini tidak bisa diputar. Pilih file MP3 atau M4A.');});
+function ytId(u){u=u.trim();let m=u.match(/(?:youtu\.be\/|v=|\/shorts\/|\/embed\/|\/live\/)([A-Za-z0-9_-]{11})/);if(m)return m[1];if(/^[A-Za-z0-9_-]{11}$/.test(u))return u;return null;}
+let ytApi=null;
+function ytLoadApi(){if(ytApi)return ytApi;ytApi=new Promise((res,rej)=>{window.onYouTubeIframeAPIReady=()=>res();const sc=document.createElement('script');sc.src='https://www.youtube.com/iframe_api';sc.onerror=()=>rej();document.head.appendChild(sc);setTimeout(()=>rej(new Error('timeout')),12000);});ytApi.catch(()=>{ytApi=null;});return ytApi;}
+async function loadYt(u){const id=ytId(u);if(!id){pMsg('Link YouTube tidak dikenali. Salin link dari tombol Bagikan di aplikasi YouTube.');return;}
+  pMsg('Memuat video…');
+  try{await ytLoadApi();}catch(e){pMsg('Pemutar YouTube tidak bisa dimuat. Periksa internet, atau buka aplikasi dari ikonnya (bukan dari claude.ai).');return;}
+  $('ytBox').hidden=false;ab={a:null,b:null};abShow();
+  if(yt&&ytReady){yt.cueVideoById(id);$('playerCtl').hidden=false;pMsg('');return;}
+  ytReady=false;
+  yt=new YT.Player('ytPlayer',{videoId:id,playerVars:{playsinline:1,rel:0,modestbranding:1},
+    events:{onReady:()=>{ytReady=true;$('playerCtl').hidden=false;pMsg('');const r=document.querySelector('[data-rate][aria-pressed="true"]');if(r)yt.setPlaybackRate(+r.dataset.rate);},
+      onError:e=>{const c=e.data;pMsg(c===101||c===150||c===153?'Pemilik video ini tidak mengizinkan diputar di aplikasi lain. Coba video lain (misalnya versi karaoke, lirik, atau cover), atau pakai file dari HP.':'Video tidak bisa diputar (kode '+c+'). Coba video lain.');}}});
+}
+$('ytLoad').onclick=()=>loadYt($('ytUrl').value);
+$('ytUrl').addEventListener('keydown',e=>{if(e.key==='Enter')loadYt($('ytUrl').value);});
+$('playBtn').onclick=()=>{ac();keepAwake();if(P.playing())P.pause();else P.play();};
+document.querySelectorAll('[data-rate]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-rate]').forEach(x=>x.setAttribute('aria-pressed',x===b));P.rate(+b.dataset.rate);});
+$('seek').addEventListener('input',()=>{seeking=true;$('timeText').textContent=fmt($('seek').value/1000*P.dur())+' / '+fmt(P.dur());});
+$('seek').addEventListener('change',()=>{P.seek($('seek').value/1000*P.dur());seeking=false;});
+function abShow(){$('abText').textContent=ab.a!=null&&ab.b!=null?'Mengulang '+fmt(ab.a)+' sampai '+fmt(ab.b)+'.':ab.a!=null?'Awal ditandai di '+fmt(ab.a)+'. Sekarang tekan "Tandai akhir".':'Tidak mengulang. Tekan "Tandai awal" dan "Tandai akhir" saat lagu berjalan, misalnya di reff.';}
+$('markA').onclick=()=>{ab.a=P.time();if(ab.b!=null&&ab.b<=ab.a)ab.b=null;abShow();};
+$('markB').onclick=()=>{const t=P.time();if(ab.a==null||t<=ab.a+0.5)return;ab.b=t;abShow();};
+$('clearAB').onclick=()=>{ab={a:null,b:null};abShow();};
+setInterval(()=>{if(activeTab!=='iring')return;const d=P.dur(),t=P.time(),pl=P.playing();
+  $('playBtn').textContent=pl?'⏸ Jeda':'▶ Putar';
+  if(!seeking){$('timeText').textContent=fmt(t)+' / '+fmt(d);$('seek').value=d?Math.round(t/d*1000):0;}
+  if(pl&&ab.a!=null&&ab.b!=null&&t>=ab.b)P.seek(ab.a);},200);
+renderSaved();
+
 /* ---------- Menu tab ---------- */
 function showTab(t){
-  ['main','songs','set'].forEach(x=>{$('tab-'+x).hidden=x!==t;});
+  ['main','songs','iring','set'].forEach(x=>{$('tab-'+x).hidden=x!==t;});activeTab=t;if(t!=='iring')iPause();else iRender();
   document.querySelectorAll('.tabbtn').forEach(b=>{if(b.dataset.tab===t)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   if(t!=='main'){stopGame();stopDemo();}
   window.scrollTo(0,0);if(t==='main'){if(mode==='game')setTimeout(fitGame,30);else render();}
@@ -797,6 +1025,7 @@ function setConn(state,text,help){$('dot').className='dot '+state;$('dot2').clas
 /* Pesan dari keyboard: nada ditekan, dilepas, dan pedal sustain */
 const held={};const sustained=new Set();let sustain=false;
 function midiMsg(cmd,n,v){
+  if(cmd===0x90&&v>0)downNotes.add(n);else if(cmd===0x80||(cmd===0x90&&v===0))downNotes.delete(n);
   if(cmd===0x90&&v>0){
     if($('pianoOn').checked){if(held[n])noteOff(held[n],0.05);sustained.delete(n);held[n]=noteOn(n,v/127);}
     press(n);
