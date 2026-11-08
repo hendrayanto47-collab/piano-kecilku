@@ -289,6 +289,11 @@ details.card[open]{gap:10px}
  <section class="tab" id="tab-iring" hidden>
   <h2>Mode Iringan</h2>
   <p class="muted">Putar lagu kesukaan dari HP atau YouTube, lalu iringi dengan keyboard. Chord yang harus ditekan menyala di piano.</p>
+  <section class="card" id="savedCard">
+    <h3>Lagu iringan tersimpan</h3>
+    <div id="iSaved" class="instr"></div>
+    <p class="muted" id="iSavedEmpty" style="font-size:14px">Belum ada. Setelah chord ditempel, ketuk "Simpan lagu iringan" di bagian 3.</p>
+  </section>
 
   <section class="card">
     <h3>1. Musik</h3>
@@ -376,7 +381,6 @@ details.card[open]{gap:10px}
     </div>
     <div class="controls"><button class="btn" id="iSave">Simpan lagu iringan</button><button class="btn ghost" id="iNew">Lagu baru</button><button class="btn danger" id="iDel" hidden>Hapus</button></div>
     <p class="legend">Cari di Google: <b>chord [judul lagu]</b>, salin bagian chord-nya, lalu tempel di sini. Link YouTube ikut tersimpan.</p>
-    <div id="iSaved" class="instr"></div>
   </details>
  </section>
 
@@ -951,11 +955,11 @@ $('nextChord').onclick=()=>{if(iState.idx<iState.chords.length-1){iState.idx++;i
 $('firstChord').onclick=()=>{iState.idx=0;iRender();};
 function setTr(v){iState.tr=Math.max(-11,Math.min(11,v));$('trText').textContent=(iState.tr>0?'+':'')+iState.tr;iParse();}
 $('trDown').onclick=()=>setTr(iState.tr-1);$('trUp').onclick=()=>setTr(iState.tr+1);
-function renderSaved(){const box=$('iSaved');box.innerHTML='';
+function renderSaved(){const box=$('iSaved');box.innerHTML='';$('iSavedEmpty').hidden=iSaved.length>0;
   iSaved.forEach(x=>{const b=document.createElement('button');b.className='chip';b.setAttribute('aria-pressed',x.id===iState.id);b.textContent='🎤 '+x.title;b.onclick=()=>loadSaved(x);box.appendChild(b);});
   $('iDel').hidden=!iState.id;}
 function loadSaved(x){iState.id=x.id;iState.title=x.title;iState.idx=0;iState.times=x.times||null;$('iTitle').value=x.title;$('iChords').value=x.chords;setTr(x.tr||0);
-  if(x.yt){$('ytUrl').value=x.yt;setSrc('yt');loadYt(x.yt);}renderSaved();$('chordEditor').open=false;window.scrollTo(0,0);}
+  if(x.yt){$('ytUrl').value=x.yt;setSrc('yt');loadYt(x.yt);}else pMsg(x.times?'Pilih lagi file musiknya (MP3 atau MIDI yang sama) di bagian 1, lalu putar: chord akan berganti sendiri.':'');renderSaved();$('chordEditor').open=false;window.scrollTo(0,0);}
 $('iSave').onclick=()=>{if(!extractChords($('iChords').value).length){$('iChords').focus();return;}
   const rec={id:iState.id||('i'+Date.now()),title:$('iTitle').value.trim()||'Lagu tanpa judul',chords:$('iChords').value,tr:iState.tr,yt:src==='yt'?$('ytUrl').value.trim():'',times:iState.times||null};
   const i=iSaved.findIndex(x=>x.id===rec.id);if(i>=0)iSaved[i]=rec;else iSaved.push(rec);store.set('pk-iring',iSaved);iState.id=rec.id;iState.title=rec.title;renderSaved();iRender();
