@@ -1070,7 +1070,7 @@ async function micStart(){
   mic={stream,an,buf:new Float32Array(N),pc,w,bassBin,acc:0,acc2:0,last:performance.now(),timer:null};
   mic.timer=setInterval(micTick,100);keepAwake();
   $('micBtn').textContent='⏹ Berhenti mendengarkan';$('micBtn').classList.add('on');$('micPane').hidden=false;
-  $('chordHelp').textContent='Putar lagunya sekarang (dari HP ini atau dari TV/laptop/speaker di dekat HP). Kalau chord di layar tertinggal atau kelewat, betulkan dengan tombol ‹ Sebelumnya / Berikutnya ›.';
+  $('chordHelp').textContent='Putar lagunya dari perangkat LAIN (TV, laptop, HP lain, atau speaker) di dekat HP ini. Kalau diputar dari HP yang sama, HP bisa mengubah suara musik menjadi seperti telepon (musik hilang, tinggal vokal). Kalau chord di layar tertinggal atau kelewat, betulkan dengan tombol ‹ Sebelumnya / Berikutnya ›.';
 }
 function micStop(){if(!mic)return;clearInterval(mic.timer);mic.stream.getTracks().forEach(t=>t.stop());mic=null;
   $('micBtn').textContent='🎧 Ikuti lagu otomatis';$('micBtn').classList.remove('on');$('micPane').hidden=true;
