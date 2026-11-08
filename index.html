@@ -363,6 +363,7 @@ details.card[open]{gap:10px}
     <div id="micPane" hidden class="micpane">
       <div class="meter"><i id="micLevel"></i></div>
       <p id="micInfo" class="muted" style="font-size:14px">Mendengarkan…</p>
+      <div class="field" id="micPickWrap" hidden><label for="micPick">Mikrofon yang dipakai</label><select id="micPick"></select></div>
     </div>
     <div class="chordstrip" id="chordStrip"></div>
     <div class="controls">
@@ -1061,7 +1062,8 @@ function chordScore(ch,bs,c,tr){const pcs=chordPcs(c,tr),root=(c.root+tr+120)%12
 async function micStart(){
   if(!iState.chords.length){$('chordEditor').open=true;$('iChords').focus();$('chordHelp').textContent='Tempel chord lagunya dulu di bagian 3, lalu ketuk 🎧 lagi.';return;}
   const a=ac();let stream;
-  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});}
+  const dev=prefs.micId?{deviceId:{exact:prefs.micId}}:{};
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{...dev,echoCancellation:false,noiseSuppression:false,autoGainControl:false}});}
   catch(e){$('chordHelp').textContent=inClaude?'Mikrofon tidak bisa dipakai di dalam claude.ai. Buka Piano Kecilku dari ikonnya di HP.':'Izin mikrofon ditolak. Ketuk ikon gembok di bilah alamat Chrome (atau Info aplikasi → Izin), izinkan Mikrofon, lalu coba lagi.';return;}
   const srcN=a.createMediaStreamSource(stream),an=a.createAnalyser();an.fftSize=8192;an.smoothingTimeConstant=0.35;srcN.connect(an);
   const N=an.frequencyBinCount,sr=a.sampleRate,pc=new Int8Array(N),w=new Float32Array(N),bassBin=new Uint8Array(N);
@@ -1069,6 +1071,10 @@ async function micStart(){
   /* rangkaian chord tanpa pengulangan berturut-turut (C C dihitung satu) */
   mic={stream,an,buf:new Float32Array(N),pc,w,bassBin,acc:0,acc2:0,last:performance.now(),timer:null};
   mic.timer=setInterval(micTick,100);keepAwake();
+  try{const tr0=stream.getAudioTracks()[0];mic.label=tr0&&tr0.label||'mikrofon';
+    const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='audioinput');
+    const sel=$('micPick');sel.innerHTML='';devs.forEach(d=>{const o=document.createElement('option');o.value=d.deviceId;o.textContent=d.label||'Mikrofon';if(tr0&&tr0.getSettings().deviceId===d.deviceId)o.selected=true;sel.appendChild(o);});
+    $('micPickWrap').hidden=devs.length<2;}catch(e){}
   $('micBtn').textContent='⏹ Berhenti mendengarkan';$('micBtn').classList.add('on');$('micPane').hidden=false;
   $('chordHelp').textContent='Putar lagunya dari perangkat LAIN (TV, laptop, HP lain, atau speaker) di dekat HP ini. Kalau diputar dari HP yang sama, HP bisa mengubah suara musik menjadi seperti telepon (musik hilang, tinggal vokal). Kalau chord di layar tertinggal atau kelewat, betulkan dengan tombol ‹ Sebelumnya / Berikutnya ›.';
 }
@@ -1079,9 +1085,10 @@ function nextDistinct(i){const c=iState.chords;if(!c[i])return -1;const nm=chord
 function micTick(){
   if(!mic)return;mic.an.getFloatFrequencyData(mic.buf);
   const ch=new Float32Array(12),bs=new Float32Array(12);let e=0,cnt=0;
-  for(let k=1;k<mic.buf.length;k++){const p=mic.pc[k];if(p<0)continue;const v=Math.max(0,mic.buf[k]+100)*mic.w[k];ch[p]+=v;if(mic.bassBin[k])bs[p]+=v;e+=mic.buf[k];cnt++;}
-  const lvl=Math.max(0,Math.min(1,(e/cnt+95)/45));$('micLevel').style.width=Math.round(lvl*100)+'%';
-  if(lvl<0.15){$('micInfo').textContent='Suara terlalu pelan. Besarkan volume lagu atau dekatkan HP ke speaker.';mic.acc=Math.max(0,mic.acc-1);return;}
+  let mx=-200;
+  for(let k=1;k<mic.buf.length;k++){const p=mic.pc[k];if(p<0)continue;const db=isFinite(mic.buf[k])?mic.buf[k]:-200;const v=Math.max(0,db+100)*mic.w[k];ch[p]+=v;if(mic.bassBin[k])bs[p]+=v;if(db>mx)mx=db;}
+  const lvl=Math.max(0,Math.min(1,(mx+95)/55));$('micLevel').style.width=Math.round(lvl*100)+'%';
+  if(mx<-78){$('micInfo').textContent=mx<-150?'Mikrofon tidak menangkap suara apa pun ('+mic.label+'). Coba bicara atau tepuk tangan: kalau garis hijau tetap diam, mikrofonnya mati atau salah pilih.':'Suara terlalu pelan. Besarkan volume lagu atau dekatkan ke speaker.';mic.acc=Math.max(0,mic.acc-1);return;}
   const tr=iState.tr,c=iState.chords,i=iState.idx,j=nextDistinct(i),k=j>=0?nextDistinct(j):-1;
   if(j<0){$('micInfo').textContent='Mendengarkan… (chord terakhir)';return;}
   const sCur=chordScore(ch,bs,c[i],tr),sNext=chordScore(ch,bs,c[j],tr),sNext2=k>=0?chordScore(ch,bs,c[k],tr):-9;
@@ -1094,6 +1101,7 @@ function micTick(){
   else if(since>600&&mic.acc2>=7){iState.idx=k;mic.acc=0;mic.acc2=0;mic.last=performance.now();iRender();}
 }
 $('micBtn').onclick=()=>{if(mic)micStop();else micStart();};
+$('micPick').onchange=()=>{prefs.micId=$('micPick').value;store.set('pk-prefs',prefs);micStop();micStart();};
 ['prevChord','nextChord','firstChord'].forEach(id=>$(id).addEventListener('click',()=>{if(mic){mic.acc=0;mic.acc2=0;mic.last=performance.now();}}));
 
 /* ---------- Rekam waktu chord (untuk YouTube, MP3, atau MIDI) ---------- */
