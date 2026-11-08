@@ -174,6 +174,13 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .tabbtn[aria-current="page"]{color:var(--accent);background:var(--paper)}
 #songGroups .group-label:first-child{margin-top:0}
 /* Mode iringan */
+.micpane{display:flex;flex-direction:column;gap:6px}
+.meter{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.meter>i{display:block;height:100%;width:0;background:var(--ok);transition:width .1s}
+#micBtn.on{background:var(--bad);color:#fff}
+details.adv{border-top:1px solid var(--line);padding-top:8px}
+details.adv summary{font-weight:700;font-size:14px;color:var(--muted);cursor:pointer}
+details.adv[open]{display:flex;flex-direction:column;gap:10px}
 .rec{display:flex;flex-direction:column;gap:10px;border:2px dashed var(--bad);border-radius:14px;padding:12px}
 .bigtap{width:100%;padding:22px 16px;font-size:22px;font-family:var(--display);font-weight:800}
 .bigtap:active{transform:scale(.98)}
@@ -352,7 +359,20 @@ details.card[open]{gap:10px}
     </div>
     <div class="kb-wrap"><div class="ckb" id="ckb" aria-label="Tuts untuk chord ini"></div></div>
     <p class="legend"><span class="sw sw-r"></span> tangan kanan (chord) &nbsp; <span class="sw sw-l"></span> tangan kiri (nada bas)</p>
+    <button class="btn bigtap" id="micBtn">🎧 Ikuti lagu otomatis</button>
+    <div id="micPane" hidden class="micpane">
+      <div class="meter"><i id="micLevel"></i></div>
+      <p id="micInfo" class="muted" style="font-size:14px">Mendengarkan…</p>
+    </div>
     <div class="chordstrip" id="chordStrip"></div>
+    <div class="controls">
+      <button class="btn ghost" id="prevChord">‹ Sebelumnya</button>
+      <button class="btn ghost" id="nextChord">Berikutnya ›</button>
+      <button class="btn ghost" id="firstChord">Ke awal</button>
+    </div>
+    <p class="legend" id="chordHelp">Ketuk 🎧 lalu putar lagunya. Aplikasi mendengarkan lewat mikrofon dan memindahkan chord sendiri mengikuti lagu. Anda cukup menekan tuts yang menyala.</p>
+    <details class="adv">
+      <summary>Pilihan lanjutan</summary>
     <div class="controls"><button class="btn ghost" id="recBtn">⏺ Rekam waktu chord</button></div>
     <div id="recPane" class="rec" hidden>
       <p id="recInfo" style="font-weight:700"></p>
@@ -360,13 +380,8 @@ details.card[open]{gap:10px}
       <div class="controls"><button class="chip" id="recUndo">↶ Batalkan ketukan</button><button class="chip" id="recDone">✓ Selesai</button><button class="chip" id="recCancel">Batal</button></div>
       <p class="legend">Dengarkan lagunya sambil melihat lembar chord. Ketuk tombol besar tepat saat chord berikutnya mulai terdengar.</p>
     </div>
-    <label class="toggle" id="followWrap" hidden><input type="checkbox" id="followOn" checked> <span><b>Chord ikut musik</b> (berganti sendiri sesuai waktu lagu)</span></label>
-    <div class="controls">
-      <button class="btn ghost" id="prevChord">‹ Sebelumnya</button>
-      <button class="btn" id="nextChord">Berikutnya ›</button>
-      <button class="btn ghost" id="firstChord">Ke awal</button>
-    </div>
-    <p class="legend">Tekan chord yang menyala di keyboard Rixton, aplikasi otomatis pindah ke chord berikutnya. Bisa juga pakai tombol Berikutnya.</p>
+    <label class="toggle" id="followWrap" hidden><input type="checkbox" id="followOn" checked> <span><b>Chord ikut waktu rekaman / tebakan</b></span></label>
+    </details>
   </section>
 
   <details class="card" id="chordEditor" open>
@@ -430,6 +445,7 @@ details.card[open]{gap:10px}
       <li><b>Tambah lagu:</b> ketuk kartu "+ Tambah lagu", tempel not angka dari internet atau buku lagu, tekan "Dengar" untuk mengecek, lalu "Simpan". Lagu tersimpan di HP ini.</li>
       <li><b>Pilih suara:</b> ketuk salah satu alat musik (piano, gitar, biola, angklung, gamelan, dan lainnya), lalu kecilkan volume keyboard Rixton. Suara terdengar dari speaker HP, dan pedal sustain ikut berfungsi. Supaya lebih merdu, sambungkan HP ke speaker Bluetooth. Angklung, gamelan, dan kotak musik dibuat langsung oleh aplikasi, jadi tetap jalan tanpa internet. Rekaman: Salamander Grand Piano (Alexander Holm, CC-BY 3.0) dan tonejs-instruments (Nicholaus Brosowsky).</li>
       <li><b>Mode game:</b> ketuk "Contohkan dulu" supaya anak melihat dan mendengar cara memainkan lagunya, lalu "Mulai game". Drum memberi ketukan, dan melodi panduan berbunyi pelan tepat saat nada harus ditekan. Balok warna turun ke keyboard. Setiap nada punya warna (Do merah, Re oranye, Mi kuning, Fa hijau, Sol biru, La nila, Si ungu), dan warna yang sama ada di tombol piano layar. Mulai dengan kecepatan Pelan.</li>
+      <li><b>Ikuti lagu otomatis:</b> tempel chord lagunya, ketuk 🎧, lalu putar lagunya (YouTube, file, atau dari TV/speaker). Aplikasi mendengarkan lewat mikrofon dan memindahkan chord sendiri. Kalau tertinggal atau kelewat, betulkan dengan tombol Sebelumnya/Berikutnya.</li>
       <li><b>Rekam waktu chord:</b> setelah chord ditempel dan musik dimuat (YouTube, file, atau MIDI), ketuk "Rekam waktu chord". Lagu diputar dari awal; ketuk tombol besar setiap kali chord berganti. Setelah itu chord berganti sendiri mengikuti lagu.</li>
       <li><b>MIDI:</b> di menu Iringan pilih 🎼 MIDI, lalu pilih file .mid. Setiap alat musik tampil terpisah dan bisa dimatikan. Tandai "Saya mainkan" pada bagian yang ingin Anda mainkan sendiri: bagian itu tidak dibunyikan dan nadanya menyala di piano. Tombol "Jadikan lagu latihan anak" memindahkan bagian itu ke menu Lagu untuk Mode belajar dan Mode game.</li>
       <li><b>Tebak chord otomatis:</b> setelah memilih file musik dari HP, ketuk "Tebak chord otomatis". Aplikasi mendengarkan lagunya lalu menebak chord dan waktunya, dan chord ikut berganti sendiri saat lagu diputar. Hasilnya tidak selalu tepat, jadi dengarkan dan perbaiki bila perlu. Untuk YouTube tidak bisa, karena YouTube tidak mengizinkan suaranya dianalisis.</li>
@@ -940,7 +956,7 @@ function iNote(m){
   const k=document.querySelector('#ckb [data-cm="'+m+'"]');if(k){k.classList.add('hit');setTimeout(()=>k.classList.remove('hit'),250);}
   const want=new Set(QUAL[c.q].map(x=>(c.root+iState.tr+x+120)%12));
   const have=new Set([...downNotes,m].map(x=>((x%12)+12)%12));
-  if(following())return;
+  if(following()||mic)return;
   if([...want].every(pc=>have.has(pc))&&performance.now()-iLastAdvance>350){iLastAdvance=performance.now();
     if(iState.idx<iState.chords.length-1){iState.idx++;iRender();}else{$('chordNext').textContent='Selesai! Tekan "Ke awal" untuk mengulang.';}}
 }
@@ -1033,6 +1049,52 @@ renderSaved();
 
 
 
+
+
+/* ---------- Ikuti lagu lewat mikrofon: chord yang ditempel jadi panduan ---------- */
+let mic=null;
+function chordPcs(c,tr){return [...new Set(QUAL[c.q].map(x=>(c.root+tr+x+120)%12))];}
+function chordScore(ch,bs,c,tr){const pcs=chordPcs(c,tr),root=(c.root+tr+120)%12,bass=c.bass==null?root:(c.bass+tr+120)%12;
+  const mean=ch.reduce((a,v)=>a+v,0)/12,n=Math.hypot(...ch)||1,bm=Math.max(...bs)||1;
+  let sc=0;pcs.forEach(pc=>sc+=(ch[pc]-mean)*(pc===root?1.1:1));sc=sc/n*Math.sqrt(3/pcs.length);
+  return sc+0.25*bs[bass]/bm;}
+async function micStart(){
+  if(!iState.chords.length){$('chordEditor').open=true;$('iChords').focus();$('chordHelp').textContent='Tempel chord lagunya dulu di bagian 3, lalu ketuk 🎧 lagi.';return;}
+  const a=ac();let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});}
+  catch(e){$('chordHelp').textContent=inClaude?'Mikrofon tidak bisa dipakai di dalam claude.ai. Buka Piano Kecilku dari ikonnya di HP.':'Izin mikrofon ditolak. Ketuk ikon gembok di bilah alamat Chrome (atau Info aplikasi → Izin), izinkan Mikrofon, lalu coba lagi.';return;}
+  const srcN=a.createMediaStreamSource(stream),an=a.createAnalyser();an.fftSize=8192;an.smoothingTimeConstant=0.35;srcN.connect(an);
+  const N=an.frequencyBinCount,sr=a.sampleRate,pc=new Int8Array(N),w=new Float32Array(N),bassBin=new Uint8Array(N);
+  for(let k=1;k<N;k++){const f=k*sr/an.fftSize;if(f<55||f>1800){pc[k]=-1;continue;}const p=69+12*Math.log2(f/440);pc[k]=((Math.round(p)%12)+12)%12;w[k]=1-Math.min(1,Math.abs(p-Math.round(p))*1.6);bassBin[k]=f<200?1:0;}
+  /* rangkaian chord tanpa pengulangan berturut-turut (C C dihitung satu) */
+  mic={stream,an,buf:new Float32Array(N),pc,w,bassBin,acc:0,acc2:0,last:performance.now(),timer:null};
+  mic.timer=setInterval(micTick,100);keepAwake();
+  $('micBtn').textContent='⏹ Berhenti mendengarkan';$('micBtn').classList.add('on');$('micPane').hidden=false;
+  $('chordHelp').textContent='Putar lagunya sekarang (dari HP ini atau dari TV/laptop/speaker di dekat HP). Kalau chord di layar tertinggal atau kelewat, betulkan dengan tombol ‹ Sebelumnya / Berikutnya ›.';
+}
+function micStop(){if(!mic)return;clearInterval(mic.timer);mic.stream.getTracks().forEach(t=>t.stop());mic=null;
+  $('micBtn').textContent='🎧 Ikuti lagu otomatis';$('micBtn').classList.remove('on');$('micPane').hidden=true;
+  $('chordHelp').textContent='Ketuk 🎧 lalu putar lagunya. Aplikasi mendengarkan lewat mikrofon dan memindahkan chord sendiri mengikuti lagu. Anda cukup menekan tuts yang menyala.';}
+function nextDistinct(i){const c=iState.chords;if(!c[i])return -1;const nm=chordName(c[i],0);let j=i+1;while(j<c.length&&chordName(c[j],0)===nm)j++;return j<c.length?j:-1;}
+function micTick(){
+  if(!mic)return;mic.an.getFloatFrequencyData(mic.buf);
+  const ch=new Float32Array(12),bs=new Float32Array(12);let e=0,cnt=0;
+  for(let k=1;k<mic.buf.length;k++){const p=mic.pc[k];if(p<0)continue;const v=Math.max(0,mic.buf[k]+100)*mic.w[k];ch[p]+=v;if(mic.bassBin[k])bs[p]+=v;e+=mic.buf[k];cnt++;}
+  const lvl=Math.max(0,Math.min(1,(e/cnt+95)/45));$('micLevel').style.width=Math.round(lvl*100)+'%';
+  if(lvl<0.15){$('micInfo').textContent='Suara terlalu pelan. Besarkan volume lagu atau dekatkan HP ke speaker.';mic.acc=Math.max(0,mic.acc-1);return;}
+  const tr=iState.tr,c=iState.chords,i=iState.idx,j=nextDistinct(i),k=j>=0?nextDistinct(j):-1;
+  if(j<0){$('micInfo').textContent='Mendengarkan… (chord terakhir)';return;}
+  const sCur=chordScore(ch,bs,c[i],tr),sNext=chordScore(ch,bs,c[j],tr),sNext2=k>=0?chordScore(ch,bs,c[k],tr):-9;
+  const since=performance.now()-mic.last;
+  mic.acc=sNext>sCur+0.04?mic.acc+1:Math.max(0,mic.acc-1);
+  mic.acc2=(sNext2>sCur+0.06&&sNext2>sNext+0.06)?mic.acc2+1:Math.max(0,mic.acc2-1);
+  const pct=Math.round(Math.max(0,Math.min(1,sCur/(Math.max(sCur,sNext,0.01))))*100);
+  $('micInfo').textContent='Mendengarkan… kecocokan '+chordName(c[i],tr)+': '+pct+'%';
+  if(since>600&&mic.acc>=4){iState.idx=j;mic.acc=0;mic.acc2=0;mic.last=performance.now();iRender();}
+  else if(since>600&&mic.acc2>=7){iState.idx=k;mic.acc=0;mic.acc2=0;mic.last=performance.now();iRender();}
+}
+$('micBtn').onclick=()=>{if(mic)micStop();else micStart();};
+['prevChord','nextChord','firstChord'].forEach(id=>$(id).addEventListener('click',()=>{if(mic){mic.acc=0;mic.acc2=0;mic.last=performance.now();}}));
 
 /* ---------- Rekam waktu chord (untuk YouTube, MP3, atau MIDI) ---------- */
 let rec=null;
@@ -1234,7 +1296,7 @@ $('detectBtn').onclick=async()=>{
 
 /* ---------- Menu tab ---------- */
 function showTab(t){
-  ['main','songs','iring','set'].forEach(x=>{$('tab-'+x).hidden=x!==t;});activeTab=t;if(t!=='iring')iPause();else iRender();
+  ['main','songs','iring','set'].forEach(x=>{$('tab-'+x).hidden=x!==t;});activeTab=t;if(t!=='iring'){iPause();if(typeof micStop==='function')micStop();}else iRender();
   document.querySelectorAll('.tabbtn').forEach(b=>{if(b.dataset.tab===t)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   if(t!=='main'){stopGame();stopDemo();}
   window.scrollTo(0,0);if(t==='main'){if(mode==='game')setTimeout(fitGame,30);else render();}
