@@ -174,6 +174,9 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .tabbtn[aria-current="page"]{color:var(--accent);background:var(--paper)}
 #songGroups .group-label:first-child{margin-top:0}
 /* Mode iringan */
+.rec{display:flex;flex-direction:column;gap:10px;border:2px dashed var(--bad);border-radius:14px;padding:12px}
+.bigtap{width:100%;padding:22px 16px;font-size:22px;font-family:var(--display);font-weight:800}
+.bigtap:active{transform:scale(.98)}
 .parts{display:flex;flex-direction:column;gap:6px}
 .part{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--paper)}
 .part.mine{border-color:var(--sun);box-shadow:0 0 0 2px var(--sun) inset}
@@ -345,6 +348,13 @@ details.card[open]{gap:10px}
     <div class="kb-wrap"><div class="ckb" id="ckb" aria-label="Tuts untuk chord ini"></div></div>
     <p class="legend"><span class="sw sw-r"></span> tangan kanan (chord) &nbsp; <span class="sw sw-l"></span> tangan kiri (nada bas)</p>
     <div class="chordstrip" id="chordStrip"></div>
+    <div class="controls"><button class="btn ghost" id="recBtn">⏺ Rekam waktu chord</button></div>
+    <div id="recPane" class="rec" hidden>
+      <p id="recInfo" style="font-weight:700"></p>
+      <button class="btn bigtap" id="tapBtn">👆 Ganti chord</button>
+      <div class="controls"><button class="chip" id="recUndo">↶ Batalkan ketukan</button><button class="chip" id="recDone">✓ Selesai</button><button class="chip" id="recCancel">Batal</button></div>
+      <p class="legend">Dengarkan lagunya sambil melihat lembar chord. Ketuk tombol besar tepat saat chord berikutnya mulai terdengar.</p>
+    </div>
     <label class="toggle" id="followWrap" hidden><input type="checkbox" id="followOn" checked> <span><b>Chord ikut musik</b> (berganti sendiri sesuai waktu lagu)</span></label>
     <div class="controls">
       <button class="btn ghost" id="prevChord">‹ Sebelumnya</button>
@@ -416,6 +426,7 @@ details.card[open]{gap:10px}
       <li><b>Tambah lagu:</b> ketuk kartu "+ Tambah lagu", tempel not angka dari internet atau buku lagu, tekan "Dengar" untuk mengecek, lalu "Simpan". Lagu tersimpan di HP ini.</li>
       <li><b>Pilih suara:</b> ketuk salah satu alat musik (piano, gitar, biola, angklung, gamelan, dan lainnya), lalu kecilkan volume keyboard Rixton. Suara terdengar dari speaker HP, dan pedal sustain ikut berfungsi. Supaya lebih merdu, sambungkan HP ke speaker Bluetooth. Angklung, gamelan, dan kotak musik dibuat langsung oleh aplikasi, jadi tetap jalan tanpa internet. Rekaman: Salamander Grand Piano (Alexander Holm, CC-BY 3.0) dan tonejs-instruments (Nicholaus Brosowsky).</li>
       <li><b>Mode game:</b> ketuk "Contohkan dulu" supaya anak melihat dan mendengar cara memainkan lagunya, lalu "Mulai game". Drum memberi ketukan, dan melodi panduan berbunyi pelan tepat saat nada harus ditekan. Balok warna turun ke keyboard. Setiap nada punya warna (Do merah, Re oranye, Mi kuning, Fa hijau, Sol biru, La nila, Si ungu), dan warna yang sama ada di tombol piano layar. Mulai dengan kecepatan Pelan.</li>
+      <li><b>Rekam waktu chord:</b> setelah chord ditempel dan musik dimuat (YouTube, file, atau MIDI), ketuk "Rekam waktu chord". Lagu diputar dari awal; ketuk tombol besar setiap kali chord berganti. Setelah itu chord berganti sendiri mengikuti lagu.</li>
       <li><b>MIDI:</b> di menu Iringan pilih 🎼 MIDI, lalu pilih file .mid. Setiap alat musik tampil terpisah dan bisa dimatikan. Tandai "Saya mainkan" pada bagian yang ingin Anda mainkan sendiri: bagian itu tidak dibunyikan dan nadanya menyala di piano. Tombol "Jadikan lagu latihan anak" memindahkan bagian itu ke menu Lagu untuk Mode belajar dan Mode game.</li>
       <li><b>Tebak chord otomatis:</b> setelah memilih file musik dari HP, ketuk "Tebak chord otomatis". Aplikasi mendengarkan lagunya lalu menebak chord dan waktunya, dan chord ikut berganti sendiri saat lagu diputar. Hasilnya tidak selalu tepat, jadi dengarkan dan perbaiki bila perlu. Untuk YouTube tidak bisa, karena YouTube tidak mengizinkan suaranya dianalisis.</li>
       <li><b>Iringan:</b> buka menu 🎤 Iringan, pilih file musik dari HP atau tempel link YouTube, lalu tempel chord lagunya. Chord yang harus ditekan menyala kuning (tangan kanan) dan hijau (nada bas tangan kiri). Lagu bisa diperlambat dan bagian tertentu bisa diulang.</li>
@@ -930,7 +941,7 @@ function iNote(m){
     if(iState.idx<iState.chords.length-1){iState.idx++;iRender();}else{$('chordNext').textContent='Selesai! Tekan "Ke awal" untuk mengulang.';}}
 }
 function iParse(){const ch=extractChords($('iChords').value);
-  if(iState.times&&iState.times.length!==ch.length){iState.times=null;$('detectMsg').hidden=false;$('detectMsg').textContent='Jumlah chord berubah, jadi waktu chord dihapus. Chord sekarang maju saat Anda menekannya.';}
+  if(iState.times&&iState.times.length>ch.length){iState.times=null;$('detectMsg').hidden=false;$('detectMsg').textContent='Jumlah chord berubah, jadi waktu chord dihapus. Chord sekarang maju saat Anda menekannya.';}
   iState.chords=ch;if(iState.idx>=ch.length)iState.idx=0;$('followWrap').hidden=!iState.times;
   $('iParse').textContent=ch.length?ch.length+' chord terbaca: '+ch.slice(0,14).map(c=>chordName(c,iState.tr)).join(' ')+(ch.length>14?' …':''):'Belum ada chord yang terbaca.';iRender();}
 $('iChords').addEventListener('input',iParse);
@@ -1017,6 +1028,33 @@ setInterval(()=>{if(activeTab!=='iring')return;const d=P.dur(),t=P.time(),pl=P.p
 renderSaved();
 
 
+
+
+/* ---------- Rekam waktu chord (untuk YouTube, MP3, atau MIDI) ---------- */
+let rec=null;
+function recShow(){if(!rec)return;const n=rec.times.length,tot=iState.chords.length,nx=iState.chords[n];
+  $('recInfo').textContent=nx?(n===0?'Ketuk saat chord pertama ('+chordName(nx,iState.tr)+') mulai terdengar.':'Tercatat '+n+' dari '+tot+'. Ketuk saat chord berikutnya ('+chordName(nx,iState.tr)+') mulai.'):'Semua chord tercatat.';
+  $('tapBtn').textContent=nx?'👆 '+chordName(nx,iState.tr)+' mulai':'✓ Selesai';}
+$('recBtn').onclick=()=>{
+  if(!iState.chords.length){$('chordEditor').open=true;$('iChords').focus();return;}
+  if(!P.dur()){pMsg('Muat musiknya dulu di bagian 1 (file, YouTube, atau MIDI), lalu tekan Rekam lagi.');return;}
+  ac();keepAwake();rec={times:[]};iState.idx=0;iRender();$('recPane').hidden=false;$('recBtn').hidden=true;recShow();
+  P.seek(0);setTimeout(()=>P.play(),150);};
+function recTap(){if(!rec)return;const tot=iState.chords.length;if(rec.times.length>=tot){recFinish();return;}
+  const t=Math.max(0,P.time()-0.15);if(rec.times.length&&t<=rec.times[rec.times.length-1])return;
+  rec.times.push(t);iState.idx=rec.times.length-1;iRender();recShow();if(rec.times.length>=tot)setTimeout(recFinish,300);}
+function recFinish(){if(!rec)return;const ts=rec.times;rec=null;$('recPane').hidden=true;$('recBtn').hidden=false;
+  if(ts.length<2){$('detectMsg').hidden=false;return;}
+  iState.times=ts;$('followWrap').hidden=false;$('followOn').checked=true;iState.idx=0;iRender();
+  const i=iSaved.findIndex(x=>x.id===iState.id);
+  if(i>=0){iSaved[i].times=ts;if(src==='yt')iSaved[i].yt=$('ytUrl').value.trim();store.set('pk-iring',iSaved);pMsg('Waktu chord tersimpan ('+ts.length+' chord). Putar dari awal: chord akan berganti sendiri mengikuti lagu.');}
+  else pMsg('Waktu '+ts.length+' chord tercatat. Ketuk "Simpan lagu iringan" di bagian 3 supaya tersimpan. Putar dari awal untuk mencoba.');
+  P.pause();P.seek(0);}
+$('tapBtn').onclick=recTap;
+$('recUndo').onclick=()=>{if(!rec||!rec.times.length)return;rec.times.pop();iState.idx=Math.max(0,rec.times.length-1);iRender();recShow();};
+$('recDone').onclick=recFinish;
+$('recCancel').onclick=()=>{rec=null;$('recPane').hidden=true;$('recBtn').hidden=false;P.pause();};
+addEventListener('keydown',e=>{if(rec&&e.code==='Space'&&e.target.tagName!=='TEXTAREA'&&e.target.tagName!=='INPUT'){e.preventDefault();recTap();}});
 
 /* ---------- Pemutar MIDI ---------- */
 const GM_FAM=['Piano','Perkusi bernada','Organ','Gitar','Bass','Biola','Ansambel gesek','Tiup logam','Saksofon','Seruling','Synth (melodi)','Synth (latar)','Synth (efek)','Alat musik etnik','Perkusi','Efek suara'];
@@ -1137,7 +1175,7 @@ $('midiToSong').onclick=()=>{if(MP.mine<0||!MP.song)return;const x=MP.song.parts
   $('midiMsg').hidden=false;$('midiMsg').textContent='Tersimpan di menu Lagu → "Lagu saya": '+name+' ('+raw.length+' nada). Anak bisa memainkannya di Mode belajar dan Mode game.';};
 
 /* ---------- Tebak chord otomatis dari file musik ---------- */
-function following(){return !!(iState.times&&src==='file'&&audioEl.src&&$('followOn').checked);}
+function following(){return !!(iState.times&&!rec&&$('followOn').checked&&P.dur()>0);}
 const NICE=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
 function fftMag(re,im){const n=re.length;
   for(let i=1,j=0;i<n;i++){let bit=n>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;if(i<j){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}}
